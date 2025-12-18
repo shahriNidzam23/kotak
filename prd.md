@@ -5,7 +5,7 @@
 **Product Name:** KOTAK
 **Platform:** Windows 10/11 (Mini PC connected to TV)
 **Target Users:** Anyone using a mini PC + TV, including remote or gamepad control
-**Current Version:** 1.0.4
+**Current Version:** 1.1.0
 
 ### Purpose
 
@@ -62,21 +62,25 @@ Create a **fullscreen, TV-friendly launcher** built with **WPF (.NET 8) and WebV
 | **File Explorer**        | Done   | Browse files and folders from Utilities tab.                                                    |
 | **File Transfer**        | Done   | Transfer files between devices via Utilities tab.                                               |
 | **Config Refresh**       | Done   | Reload config.json without restarting the app via Settings.                                     |
+| **IPTV Support**         | Done   | Add M3U/M3U8 playlists to watch live TV channels with channel management.                       |
+| **Browser Utility**      | Done   | Launch Microsoft Edge browser from Utilities tab.                                               |
+| **Tailscale VPN**        | Done   | Turn on Tailscale VPN from Utilities tab.                                                       |
+| **Failed Channel Tracking** | Done | Automatically mark channels that fail to play and display them as disabled.                   |
 
 ### Planned Features (TODO)
 
 | Feature                        | Priority | Description                                                    |
 | ------------------------------ | -------- | -------------------------------------------------------------- |
-| **TV Channel Support (IPTV)**  | High     | Add support for IPTV links to watch TV channels.               |
 | **Radio Streaming**            | Medium   | Add support for internet radio streams.                        |
 | **Error Handling & Logging**   | Medium   | Improve error handling and add logging for debugging.          |
 | **TV Remote Support**          | Low      | Support for IR/Bluetooth TV remotes.                           |
+| **Auto-Update**                | Low      | Download and install updates automatically.                    |
 
 ---
 
 ## 4. App Configuration (config.json)
 
-* JSON-based configuration file stores apps and controller settings
+* JSON-based configuration file stores apps, controller settings, and IPTV playlists
 * Auto-generated on first run with default apps
 * Each app entry contains:
   * name
@@ -84,6 +88,10 @@ Create a **fullscreen, TV-friendly launcher** built with **WPF (.NET 8) and WebV
   * url or executable path
   * thumbnail image path
   * arguments (optional)
+* IPTV playlists contain:
+  * id, name, url
+  * channels (parsed from M3U)
+  * failedChannelIds (auto-tracked)
 
 Example:
 
@@ -115,7 +123,17 @@ Example:
     "buttonStart": 128,
     "buttonLStick": 256,
     "buttonRStick": 512
-  }
+  },
+  "iptvPlaylists": [
+    {
+      "id": "uuid",
+      "name": "My IPTV",
+      "url": "https://example.com/playlist.m3u",
+      "lastUpdated": "2025-01-01T00:00:00Z",
+      "channels": [...],
+      "failedChannelIds": []
+    }
+  ]
 }
 ```
 
@@ -124,7 +142,7 @@ Example:
 ## 5. UI/UX Design
 
 * Fullscreen window (no borders, taskbar hidden)
-* Tab-based layout: **Apps**, **Utilities**, **Settings**
+* Tab-based layout: **Apps**, **IPTV**, **Utilities**, **Settings**
 * Grid layout with large tiles rendered in **WebView2**
 * Highlight/focus indicator for currently selected tile
 * Navigation: Arrow keys, D-pad, or analog stick
@@ -139,7 +157,7 @@ Example:
 | A | Enter | Select |
 | B | Escape | Back |
 | X | Delete | Remove App |
-| Y | Y | Add App |
+| Y | Y | Add App / Add IPTV Playlist |
 | LB / RB | - | Switch tabs |
 | Start | Space | Settings Menu |
 
@@ -158,6 +176,8 @@ Example:
   * Volume and brightness control
   * Gamepad polling and button remapping
   * Update checking via GitHub API
+  * IPTV playlist parsing and channel management
+  * Tailscale VPN control
 
 ### Project Structure
 
@@ -170,8 +190,8 @@ kotak/
 │   ├── Kotak.csproj
 │   ├── App.xaml
 │   ├── MainWindow.xaml
-│   ├── Models/           # AppConfig, WifiNetwork
-│   ├── Services/         # AppConfig, Launcher, Gamepad, Wifi, System, Update
+│   ├── Models/           # AppConfig, IptvModels, WifiNetwork
+│   ├── Services/         # AppConfig, Launcher, Gamepad, Wifi, System, Update, IPTV
 │   ├── Bridge/           # JsBridge (C# <-> JavaScript)
 │   └── WebUI/            # HTML, CSS, JS for UI
 └── README.md
@@ -238,14 +258,14 @@ kotak.bat clean     # Clean build outputs
 - [x] Full deployment package / self-contained EXE
 - [x] Automated GitHub release via kotak.bat
 - [x] Config refresh without restart
-
-### In Progress
-
-- [ ] IPTV / TV channel support
-- [ ] Radio streaming support
+- [x] IPTV / TV channel support (M3U/M3U8 playlists)
+- [x] Failed channel tracking (auto-marks broken channels)
+- [x] Browser utility (Microsoft Edge)
+- [x] Tailscale VPN utility
 
 ### Future
 
+- [ ] Radio streaming support
 - [ ] Theming support (dark/light)
 - [ ] Auto-update (download and install automatically)
 - [ ] TV remote support

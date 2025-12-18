@@ -13,8 +13,10 @@ A fullscreen, TV-friendly launcher for Windows 10/11 Mini PCs. Built with WPF (.
 - **Gamepad Support** - Full XInput controller navigation (Xbox, Fantech, etc.)
 - **App Launcher** - Launch web apps and native EXE applications
 - **Dynamic App Management** - Add/remove apps without rebuilding
+- **IPTV Support** - Add M3U/M3U8 playlists to watch live TV channels
 - **Wi-Fi Management** - Scan and connect to networks
 - **System Controls** - Shutdown, restart, sleep from the launcher
+- **Utilities** - File explorer, file transfer, browser, Tailscale VPN
 
 ## Requirements
 
@@ -48,7 +50,7 @@ kotak.bat clean     # Clean build outputs
 | D-pad / Left Stick | Navigate |
 | A | Select |
 | B | Back |
-| Y | Add App |
+| Y | Add App / Add IPTV Playlist |
 | X | Remove App (on tile) |
 | LB / RB | Switch tabs |
 | Start | Settings Menu |
@@ -59,13 +61,13 @@ kotak.bat clean     # Clean build outputs
 | Arrow Keys | Navigate |
 | Enter | Select |
 | Escape | Back |
-| Y | Add App |
+| Y | Add App / Add IPTV Playlist |
 | Delete | Remove App (on tile) |
 | Space | Settings Menu |
 
 ## Configuration
 
-Apps are stored in `config.json`:
+Apps and IPTV playlists are stored in `config.json`:
 
 ```json
 {
@@ -87,7 +89,17 @@ Apps are stored in `config.json`:
     "buttonA": 1,
     "buttonB": 2,
     ...
-  }
+  },
+  "iptvPlaylists": [
+    {
+      "id": "uuid",
+      "name": "My IPTV",
+      "url": "https://example.com/playlist.m3u",
+      "lastUpdated": "2025-01-01T00:00:00Z",
+      "channels": [...],
+      "failedChannelIds": []
+    }
+  ]
 }
 ```
 
@@ -115,10 +127,12 @@ kotak/
 │   ├── MainWindow.xaml
 │   ├── Models/
 │   │   ├── AppConfig.cs
+│   │   ├── IptvModels.cs
 │   │   └── WifiNetwork.cs
 │   ├── Services/
 │   │   ├── AppConfigService.cs
 │   │   ├── AppLauncherService.cs
+│   │   ├── IptvService.cs
 │   │   ├── RawInputGamepadService.cs
 │   │   ├── WifiService.cs
 │   │   └── SystemService.cs
@@ -208,9 +222,7 @@ MIT License
 
 
 ## TODO
-- Add TV channel support via IPTV links
 - Add Radio streaming support
 - Add USB TV remote support
-- Desktop view in utilities
-- Browser view in utilities
+- Gamepad control over web apps
 
