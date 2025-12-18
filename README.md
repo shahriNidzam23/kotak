@@ -211,6 +211,5 @@ MIT License
 - Add TV channel support via IPTV links
 - Add Radio streaming support
 - Improve error handling and logging
-- Add config refresh without restart
 - Add TV remote support
 

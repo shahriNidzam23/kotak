@@ -5,10 +5,17 @@
 **Product Name:** KOTAK
 **Platform:** Windows 10/11 (Mini PC connected to TV)
 **Target Users:** Anyone using a mini PC + TV, including remote or gamepad control
+**Current Version:** 1.0.4
 
 ### Purpose
 
-Create a **fullscreen, TV-friendly launcher** built with **WPF (.NET 8) and WebView2** that allows users to navigate and launch applications, manage apps dynamically, connect to Wi-Fi, and turn off the mini PC — all without admin/user restrictions. Includes **gamepad support** for a console-like experience.
+Create a **fullscreen, TV-friendly launcher** built with **WPF (.NET 8) and WebView2** that allows users to navigate and launch applications, manage apps dynamically, connect to Wi-Fi, and control the mini PC — all with a couch-friendly UI. Includes **gamepad support** for a console-like experience.
+
+### Why was KOTAK developed?
+
+1. **Turn any Mini PC into a TV Box** - Use your Windows Mini PC as a dedicated media center with a couch-friendly UI optimized for TV viewing and gamepad navigation
+2. **Lightweight App Launcher** - Simple, fast, and focused. No bloat, just launch your apps
+3. **Because I can** - Similar apps exist, but I love to procrastinate productively
 
 ---
 
@@ -16,60 +23,98 @@ Create a **fullscreen, TV-friendly launcher** built with **WPF (.NET 8) and WebV
 
 ### Primary Goals
 
-* Provide a **10-foot UI** optimized for TV viewing
+* Provide a **couch-friendly UI** optimized for TV viewing
 * Allow navigation using arrow keys, remote, or **gamepad controller (XInput/Fantech)**
 * Launch web apps and native EXE applications
 * Dynamically add apps from any folder
 * Manage Wi-Fi connectivity
-* Shutdown or restart the mini PC
+* Control system (shutdown, restart, sleep)
 * Use **WPF + WebView2** for native performance and flexible UI
 
 ### Success Criteria
 
 * User can launch any configured app within **2 clicks**
-* Launcher starts automatically on login
+* Launcher starts automatically on login (optional)
 * Full TV-friendly UI with gamepad/remote support
 * Apps can be added dynamically without rebuilding
-* Single EXE deployment with low memory usage
+* Single EXE deployment (~69MB self-contained)
+* Built-in update checker
 
 ---
 
 ## 3. Core Features
 
-| Feature                  | Description                                                                                                                                           |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Grid Browser UI**      | Fullscreen grid displaying apps with name + thumbnail. 10-foot TV interface, rendered via **WebView2** inside WPF.                                    |
-| **Open Selected App**    | Launch any app (web or EXE) directly from launcher.                                                                                                   |
-| **Add Apps Dynamically** | Browse any folder, select any EXE, automatically add it to grid (no folder restrictions).                                                             |
-| **Shutdown/Restart PC**  | Access to turn off or restart the mini PC from launcher, implemented via native C# calls.                                                             |
-| **Wi-Fi Connectivity**   | Scan for networks and connect to Wi-Fi directly from launcher using C# backend.                                                                       |
-| **Gamepad Support**      | Full navigation and selection via XInput-compatible controllers (e.g., Fantech). Arrow keys, A/B buttons, Start/Select mapped to appropriate actions. |
-| **WPF + WebView2 UI**    | Launcher UI built with **WPF** for performance and native Windows features; **WebView2** used for flexible HTML/CSS grid layout.                      |
+### Implemented Features
+
+| Feature                  | Status | Description                                                                                     |
+| ------------------------ | ------ | ----------------------------------------------------------------------------------------------- |
+| **Grid Browser UI**      | Done   | Fullscreen grid displaying apps with name + thumbnail. Couch-friendly interface via WebView2.  |
+| **Open Selected App**    | Done   | Launch any app (web or EXE) directly from launcher.                                             |
+| **Add Apps Dynamically** | Done   | Browse any folder, select any EXE, automatically add it to grid.                                |
+| **Shutdown/Restart/Sleep** | Done | Access to turn off, restart, or sleep the mini PC from Settings tab.                           |
+| **Wi-Fi Connectivity**   | Done   | Scan for networks and connect to Wi-Fi directly from launcher.                                  |
+| **Gamepad Support**      | Done   | Full navigation via XInput-compatible controllers. Remappable buttons.                          |
+| **Volume Control**       | Done   | Adjust system volume from Settings tab.                                                         |
+| **Brightness Control**   | Done   | Adjust screen brightness (laptops/supported displays).                                          |
+| **Controller Remapping** | Done   | Customize gamepad button mappings via Settings.                                                 |
+| **Update Checker**       | Done   | Check for updates from GitHub releases.                                                         |
+| **Version Display**      | Done   | Show current version in Settings tab.                                                           |
+| **File Explorer**        | Done   | Browse files and folders from Utilities tab.                                                    |
+| **File Transfer**        | Done   | Transfer files between devices via Utilities tab.                                               |
+| **Config Refresh**       | Done   | Reload config.json without restarting the app via Settings.                                     |
+
+### Planned Features (TODO)
+
+| Feature                        | Priority | Description                                                    |
+| ------------------------------ | -------- | -------------------------------------------------------------- |
+| **TV Channel Support (IPTV)**  | High     | Add support for IPTV links to watch TV channels.               |
+| **Radio Streaming**            | Medium   | Add support for internet radio streams.                        |
+| **Error Handling & Logging**   | Medium   | Improve error handling and add logging for debugging.          |
+| **TV Remote Support**          | Low      | Support for IR/Bluetooth TV remotes.                           |
 
 ---
 
 ## 4. App Configuration (config.json)
 
-* JSON-based configuration file stores apps dynamically
+* JSON-based configuration file stores apps and controller settings
+* Auto-generated on first run with default apps
 * Each app entry contains:
-
   * name
   * type (web / exe)
   * url or executable path
   * thumbnail image path
-* Launcher reads config.json and updates grid automatically when new apps are added
+  * arguments (optional)
 
 Example:
 
 ```json
 {
   "apps": [
-    {"name": "Netflix", "type": "web", "url": "https://www.netflix.com", "thumbnail": "thumbnails/netflix.png"},
-    {"name": "Jellyfin", "type": "exe", "path": "C:/Program Files/Jellyfin/JellyfinMediaPlayer.exe", "thumbnail": "thumbnails/jellyfin.png"}
+    {
+      "name": "Netflix",
+      "type": "web",
+      "url": "https://www.netflix.com",
+      "thumbnail": "thumbnails/netflix.png"
+    },
+    {
+      "name": "VLC",
+      "type": "exe",
+      "path": "C:/Program Files/VideoLAN/VLC/vlc.exe",
+      "thumbnail": "thumbnails/vlc.png",
+      "arguments": "--fullscreen"
+    }
   ],
   "controller": {
-    "buttonA": 1,
-    "buttonB": 2
+    "buttonA": 2,
+    "buttonB": 4,
+    "buttonX": 1,
+    "buttonY": 8,
+    "buttonLB": 16,
+    "buttonRB": 32,
+    "buttonBack": 64,
+    "buttonStart": 128,
+    "buttonLStick": 256,
+    "buttonRStick": 512
   }
 }
 ```
@@ -79,11 +124,24 @@ Example:
 ## 5. UI/UX Design
 
 * Fullscreen window (no borders, taskbar hidden)
-* Tab-based layout: Apps, Utilities, Settings
+* Tab-based layout: **Apps**, **Utilities**, **Settings**
 * Grid layout with large tiles rendered in **WebView2**
-* Highlight for currently focused tile
-* Arrow keys, remote, and **gamepad** navigation
-* LB/RB for tab switching
+* Highlight/focus indicator for currently selected tile
+* Navigation: Arrow keys, D-pad, or analog stick
+* **LB/RB** for tab switching
+* Header with date/time and Wi-Fi status
+
+### Controls
+
+| Gamepad | Keyboard | Action |
+|---------|----------|--------|
+| D-pad / Left Stick | Arrow Keys | Navigate |
+| A | Enter | Select |
+| B | Escape | Back |
+| X | Delete | Remove App |
+| Y | Y | Add App |
+| LB / RB | - | Switch tabs |
+| Start | Space | Settings Menu |
 
 ---
 
@@ -91,57 +149,107 @@ Example:
 
 * **WPF (.NET 8)**: native Windows performance, handles window, input, and system commands
 * **WebView2**: renders flexible HTML/CSS/JS UI for the app grid
+* **Self-contained EXE**: ~69MB, includes .NET runtime (no installation required)
 * **C# backend** handles:
-
   * Launching apps (EXE or web)
   * Browsing directories and adding apps
-  * Shutdown/restart functionality
-  * Wi-Fi management
-  * Polling **gamepad/XInput controllers** for navigation and selection
+  * Shutdown/restart/sleep functionality
+  * Wi-Fi management (scan, connect)
+  * Volume and brightness control
+  * Gamepad polling and button remapping
+  * Update checking via GitHub API
+
+### Project Structure
+
+```
+kotak/
+├── kotak.bat             # Build script (run, publish, release, version, clean)
+├── config.json           # App configuration (auto-generated)
+├── thumbnails/           # App icons (auto-generated)
+├── src/
+│   ├── Kotak.csproj
+│   ├── App.xaml
+│   ├── MainWindow.xaml
+│   ├── Models/           # AppConfig, WifiNetwork
+│   ├── Services/         # AppConfig, Launcher, Gamepad, Wifi, System, Update
+│   ├── Bridge/           # JsBridge (C# <-> JavaScript)
+│   └── WebUI/            # HTML, CSS, JS for UI
+└── README.md
+```
 
 ---
 
-## 7. Functional Notes
+## 7. Build & Release
 
-1. **Grid Browser App**: Read config.json, display all apps in a tile grid using WebView2
-2. **Open App**: EXE via `Process.Start`, Web via embedded WebView2 browser
-3. **Add Apps Dynamically**: Browse any folder, select EXE(s), update config.json
-4. **Shutdown/Restart**: Accessible from Settings tab via C# commands
-5. **Wi-Fi Connectivity**: Scan and connect to available networks via C# backend
-6. **Gamepad Support**: Navigate, launch, and access menus via XInput-compatible controllers, integrated in WPF
+### Build Commands
+
+```cmd
+kotak.bat run       # Build and run (Debug)
+kotak.bat publish   # Create Release executable (prompts for version)
+kotak.bat release   # Publish and create GitHub release
+kotak.bat version   # Show current version
+kotak.bat clean     # Clean build outputs
+```
+
+### Release Process
+
+1. Run `kotak.bat release`
+2. Select version type (Major/Minor/Patch)
+3. Build creates `publish/` folder
+4. Script commits, tags, and pushes to GitHub
+5. Creates GitHub release with zip (excludes config.json and thumbnails)
+
+### Update Process (Users)
+
+1. Go to Settings tab
+2. Click "Check for Updates"
+3. If update available, click "Download Update"
+4. Download zip from GitHub releases
+5. Extract and replace files (config.json preserved)
 
 ---
 
 ## 8. Non-Functional Requirements
 
-* Startup time < 3s
-* Fullscreen always on top
-* Minimal memory usage (<150MB)
-* Works offline
-* Easy to add apps with no technical knowledge
-* TV-friendly visuals, high contrast, readable from 2–3 meters
-* Single executable deployment
+| Requirement | Target |
+|-------------|--------|
+| Startup time | < 3 seconds |
+| Memory usage | < 150MB |
+| Executable size | ~69MB (self-contained) |
+| Offline support | Yes (except updates, Wi-Fi) |
+| TV-friendly | High contrast, readable from 2-3 meters |
 
 ---
 
-## 9. Future Enhancements (Optional)
+## 9. Milestones
 
-* Page navigation for large app lists
-* Theming support (dark/light)
-* Auto-update mechanism for launcher
-* Volume/brightness overlay
+### Completed
 
----
+- [x] MVP Grid UI + config.json integration using WPF + WebView2
+- [x] Launch web/EXE apps
+- [x] Dynamic add apps via folder browsing
+- [x] Shutdown/Restart/Sleep buttons
+- [x] Wi-Fi connectivity interface
+- [x] Gamepad navigation support with remapping
+- [x] Volume and brightness controls
+- [x] File explorer and transfer utilities
+- [x] Update checker from GitHub releases
+- [x] Version display in Settings
+- [x] Full deployment package / self-contained EXE
+- [x] Automated GitHub release via kotak.bat
+- [x] Config refresh without restart
 
-## 10. Milestones
+### In Progress
 
-1. MVP Grid UI + config.json integration using **WPF + WebView2**
-2. Launch web/EXE apps
-3. Dynamic add apps via folder browsing
-4. Shutdown/Restart button
-5. Wi-Fi connectivity interface
-6. Gamepad navigation support integrated in WPF
-7. Full deployment package / self-contained EXE
+- [ ] IPTV / TV channel support
+- [ ] Radio streaming support
+
+### Future
+
+- [ ] Theming support (dark/light)
+- [ ] Auto-update (download and install automatically)
+- [ ] TV remote support
+- [ ] Page navigation for large app lists
 
 ---
 

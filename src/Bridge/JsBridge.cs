@@ -65,6 +65,14 @@ public class JsBridge
     }
 
     /// <summary>
+    /// Reload config from disk (refresh without restart)
+    /// </summary>
+    public bool ReloadConfig()
+    {
+        return _configService.ReloadConfig();
+    }
+
+    /// <summary>
     /// Add a new app to the configuration
     /// </summary>
     public bool AddApp(string name, string type, string pathOrUrl, string thumbnail)
@@ -631,5 +639,141 @@ public class JsBridge
     public void OpenReleasesPage()
     {
         _updateService.OpenReleasesPage();
+    }
+
+    // Store last update info for download
+    private UpdateInfo? _lastUpdateInfo;
+    private CancellationTokenSource? _downloadCts;
+
+    /// <summary>
+    /// Start downloading and installing the update
+    /// </summary>
+    public string StartUpdateDownload()
+    {
+        try
+        {
+            // Get update info
+            var task = _updateService.CheckForUpdatesAsync();
+            task.Wait();
+            _lastUpdateInfo = task.Result;
+
+            if (!_lastUpdateInfo.HasUpdate || string.IsNullOrEmpty(_lastUpdateInfo.DownloadUrl))
+            {
+                return JsonSerializer.Serialize(new { success = false, error = "No update available" });
+            }
+
+            // Cancel any existing download
+            _downloadCts?.Cancel();
+            _downloadCts = new CancellationTokenSource();
+
+            // Start async download
+            _ = DownloadAndInstallUpdateAsync(_lastUpdateInfo.DownloadUrl, _lastUpdateInfo.FileName ?? "update.zip");
+
+            return JsonSerializer.Serialize(new { success = true, message = "Download started" });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+        }
+    }
+
+    private async Task DownloadAndInstallUpdateAsync(string downloadUrl, string fileName)
+    {
+        try
+        {
+            // Phase 1: Download
+            SendUpdateProgress("download", 0, "Starting download...");
+
+            var downloadPath = await _updateService.DownloadUpdateAsync(
+                downloadUrl,
+                fileName,
+                progress => SendUpdateProgress("download", progress, $"Downloading... {progress}%")
+            );
+
+            if (string.IsNullOrEmpty(downloadPath))
+            {
+                SendUpdateError("Download failed. Please try again.");
+                return;
+            }
+
+            SendUpdateProgress("download", 100, "Download complete!");
+
+            // Phase 2: Extract
+            SendUpdateProgress("extract", 0, "Extracting update...");
+
+            var extractPath = await _updateService.ExtractUpdateAsync(
+                downloadPath,
+                status => SendUpdateProgress("extract", 50, status)
+            );
+
+            if (string.IsNullOrEmpty(extractPath))
+            {
+                SendUpdateError("Failed to extract update files.");
+                return;
+            }
+
+            SendUpdateProgress("extract", 100, "Extraction complete!");
+
+            // Phase 3: Generate batch script
+            SendUpdateProgress("install", 0, "Preparing installation...");
+
+            var batchPath = _updateService.GenerateUpdateBatchScript(extractPath);
+
+            if (string.IsNullOrEmpty(batchPath))
+            {
+                SendUpdateError("Failed to prepare update installer.");
+                return;
+            }
+
+            SendUpdateProgress("install", 50, "Ready to install. KOTAK will restart...");
+
+            // Give UI time to update
+            await Task.Delay(1500);
+
+            // Phase 4: Launch script and close app
+            if (_updateService.LaunchUpdateScript(batchPath))
+            {
+                SendUpdateProgress("install", 100, "Installing update...");
+                await Task.Delay(500);
+
+                // Close the application
+                _mainWindow.Dispatcher.Invoke(() =>
+                {
+                    _mainWindow.Close();
+                });
+            }
+            else
+            {
+                SendUpdateError("Failed to start update installer.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SendUpdateError($"Update failed: {ex.Message}");
+        }
+    }
+
+    private void SendUpdateProgress(string phase, int progress, string message)
+    {
+        _mainWindow.Dispatcher.Invoke(() =>
+        {
+            _mainWindow.SendUpdateProgress(phase, progress, message);
+        });
+    }
+
+    private void SendUpdateError(string error)
+    {
+        _mainWindow.Dispatcher.Invoke(() =>
+        {
+            _mainWindow.SendUpdateError(error);
+        });
+    }
+
+    /// <summary>
+    /// Cancel ongoing update download
+    /// </summary>
+    public void CancelUpdateDownload()
+    {
+        _downloadCts?.Cancel();
     }
 }

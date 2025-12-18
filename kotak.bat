@@ -154,9 +154,9 @@ echo Pushing to GitHub...
 git push
 git push --tags
 
-REM Create zip file of publish folder
+REM Create zip file of publish folder (exclude config.json and thumbnails to avoid overwriting user data)
 echo Creating release zip...
-powershell -Command "Compress-Archive -Path 'publish\*' -DestinationPath 'Kotak-v!RELEASE_VER!.zip' -Force"
+powershell -Command "Get-ChildItem 'publish' -Exclude 'config.json','thumbnails' | Compress-Archive -DestinationPath 'Kotak-v!RELEASE_VER!.zip' -Force"
 
 REM Create GitHub release with zip
 echo Creating release on GitHub...

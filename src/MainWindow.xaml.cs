@@ -570,4 +570,30 @@ public partial class MainWindow : Window
         });
         webView.CoreWebView2?.PostWebMessageAsString(msg);
     }
+
+    // ============================
+    // Update Progress Events
+    // ============================
+
+    public void SendUpdateProgress(string phase, int progress, string message)
+    {
+        var msg = JsonSerializer.Serialize(new
+        {
+            type = "updateProgress",
+            phase,
+            progress,
+            message
+        });
+        webView.CoreWebView2?.PostWebMessageAsString(msg);
+    }
+
+    public void SendUpdateError(string error)
+    {
+        var msg = JsonSerializer.Serialize(new
+        {
+            type = "updateError",
+            error
+        });
+        webView.CoreWebView2?.PostWebMessageAsString(msg);
+    }
 }

@@ -25,7 +25,11 @@ const state = {
     isMappingMode: false,
     // Cursor auto-hide
     cursorHideTimeout: null,
-    isCursorVisible: true
+    isCursorVisible: true,
+    // Update download state
+    updateDownloading: false,
+    updatePhase: null,
+    updateProgress: 0
 };
 
 // ============================
@@ -53,6 +57,7 @@ async function initializeApp() {
     setupMouseClickHandlers();
     setupCursorAutoHide();
     updateFocusableElements();
+    loadVersion();
 
     if (skipSplash) {
         // Skip splash animation (returning from app via LB+RB+Start combo)
@@ -94,6 +99,44 @@ async function loadApps() {
         state.apps = [];
         renderAppGrid();
     }
+}
+
+function refreshConfig() {
+    if (!bridge) return;
+
+    try {
+        const success = bridge.ReloadConfig();
+        if (success) {
+            // Reload apps and re-render
+            loadApps();
+            // Show brief success feedback
+            showToast('Config refreshed successfully');
+        } else {
+            showToast('Failed to refresh config');
+        }
+    } catch (e) {
+        console.error('Error refreshing config:', e);
+        showToast('Error refreshing config');
+    }
+}
+
+function showToast(message) {
+    // Create toast element if it doesn't exist
+    let toast = document.getElementById('toast-message');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-message';
+        toast.className = 'toast-message';
+        document.body.appendChild(toast);
+    }
+
+    toast.textContent = message;
+    toast.classList.add('show');
+
+    // Hide after 2 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 2000);
 }
 
 function renderAppGrid() {
@@ -381,9 +424,18 @@ function loadVersion() {
 
     try {
         const version = bridge.GetVersion();
+        const versionText = `v${version}`;
+
+        // Update settings version
         const versionEl = document.getElementById('app-version');
         if (versionEl) {
-            versionEl.textContent = `v${version}`;
+            versionEl.textContent = versionText;
+        }
+
+        // Update footer version
+        const footerVersionEl = document.getElementById('footer-version');
+        if (footerVersionEl) {
+            footerVersionEl.textContent = versionText;
         }
     } catch (e) {
         console.error('Error loading version:', e);
@@ -449,10 +501,101 @@ function checkForUpdates() {
 }
 
 function downloadUpdate() {
-    if (!bridge || !updateInfo || !updateInfo.releaseUrl) return;
+    if (!bridge || !updateInfo || !updateInfo.downloadUrl) return;
+    if (state.updateDownloading) return;
 
-    // Open the releases page in browser
-    bridge.OpenReleasesPage();
+    state.updateDownloading = true;
+
+    // Show progress UI
+    const availableEl = document.getElementById('update-available');
+    const progressEl = document.getElementById('update-progress');
+    const errorEl = document.getElementById('update-error-message');
+
+    if (availableEl) availableEl.style.display = 'none';
+    if (progressEl) progressEl.style.display = '';
+    if (errorEl) errorEl.style.display = 'none';
+
+    updateProgressUI('download', 0, 'Starting download...');
+    updateFocusableElements();
+
+    try {
+        const resultJson = bridge.StartUpdateDownload();
+        const result = JSON.parse(resultJson);
+
+        if (!result.success) {
+            showUpdateError(result.error || 'Failed to start download');
+        }
+    } catch (e) {
+        console.error('Error starting update download:', e);
+        showUpdateError('Failed to start download');
+    }
+}
+
+function updateProgressUI(phase, progress, message) {
+    const phaseEl = document.getElementById('update-phase');
+    const progressFill = document.getElementById('update-progress-fill');
+    const progressText = document.getElementById('update-progress-text');
+    const progressPercent = document.getElementById('update-progress-percent');
+
+    if (phaseEl) {
+        const phaseLabels = {
+            'download': 'Downloading',
+            'extract': 'Extracting',
+            'install': 'Installing'
+        };
+        phaseEl.textContent = phaseLabels[phase] || phase;
+    }
+
+    if (progressFill) progressFill.style.width = `${progress}%`;
+    if (progressText) progressText.textContent = message;
+    if (progressPercent) progressPercent.textContent = `${progress}%`;
+
+    state.updatePhase = phase;
+    state.updateProgress = progress;
+}
+
+function showUpdateError(error) {
+    const errorEl = document.getElementById('update-error-message');
+    const progressEl = document.getElementById('update-progress');
+    const availableEl = document.getElementById('update-available');
+
+    if (progressEl) progressEl.style.display = 'none';
+    if (errorEl) {
+        errorEl.textContent = error;
+        errorEl.style.display = '';
+    }
+    if (availableEl) availableEl.style.display = '';
+
+    state.updateDownloading = false;
+    updateFocusableElements();
+}
+
+function resetUpdateUI() {
+    state.updateDownloading = false;
+    state.updatePhase = null;
+    state.updateProgress = 0;
+
+    const availableEl = document.getElementById('update-available');
+    const progressEl = document.getElementById('update-progress');
+    const errorEl = document.getElementById('update-error-message');
+
+    if (availableEl) availableEl.style.display = '';
+    if (progressEl) progressEl.style.display = 'none';
+    if (errorEl) errorEl.style.display = 'none';
+
+    updateFocusableElements();
+}
+
+function cancelUpdateDownload() {
+    if (!bridge || !state.updateDownloading) return;
+
+    try {
+        bridge.CancelUpdateDownload();
+        resetUpdateUI();
+        showToast('Update cancelled');
+    } catch (e) {
+        console.error('Error cancelling update:', e);
+    }
 }
 
 function updateVolumeDisplay(level) {
@@ -809,6 +952,9 @@ function activateFocused() {
         case 'download-update':
             downloadUpdate();
             break;
+        case 'cancel-update':
+            cancelUpdateDownload();
+            break;
         case 'confirm-yes':
             handleConfirmYes();
             break;
@@ -824,6 +970,9 @@ function activateFocused() {
             break;
         case 'controller-settings':
             showControllerSettings();
+            break;
+        case 'refresh-config':
+            refreshConfig();
             break;
         case 'map-button':
             startButtonMapping(element.dataset.button);
@@ -956,6 +1105,9 @@ function handleMouseClick(e) {
         case 'download-update':
             downloadUpdate();
             break;
+        case 'cancel-update':
+            cancelUpdateDownload();
+            break;
         case 'confirm-yes':
             handleConfirmYes();
             break;
@@ -971,6 +1123,9 @@ function handleMouseClick(e) {
             break;
         case 'controller-settings':
             showControllerSettings();
+            break;
+        case 'refresh-config':
+            refreshConfig();
             break;
         case 'map-button':
             startButtonMapping(target.dataset.button);
@@ -1086,6 +1241,10 @@ function setupGamepadListener() {
             } else if (data.type === 'transferStatus') {
                 state.transferServerRunning = data.isRunning;
                 updateTransferUI(data.isRunning);
+            } else if (data.type === 'updateProgress') {
+                updateProgressUI(data.phase, data.progress, data.message);
+            } else if (data.type === 'updateError') {
+                showUpdateError(data.error);
             }
         });
     } else {

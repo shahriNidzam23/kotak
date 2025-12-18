@@ -120,6 +120,10 @@
                     <span class="icon">&#127918;</span>
                     <span>Controller Settings</span>
                 </button>
+                <button class="settings-item focusable" data-action="refresh-config">
+                    <span class="icon">&#128260;</span>
+                    <span>Refresh Config</span>
+                </button>
                 <div class="settings-divider"></div>
                 <button class="settings-item focusable" data-action="sleep">
                     <span class="icon">&#9790;</span>
@@ -148,6 +152,7 @@
                         <span class="icon">&#128269;</span>
                         <span>Check for Updates</span>
                     </button>
+                    <!-- Update Available -->
                     <div class="update-available" id="update-available" style="display: none;">
                         <div class="update-info">
                             <span class="update-badge">New version available!</span>
@@ -155,9 +160,26 @@
                         </div>
                         <button class="settings-item focusable update-download-btn" data-action="download-update">
                             <span class="icon">&#128229;</span>
-                            <span>Download Update</span>
+                            <span>Download &amp; Install Update</span>
                         </button>
                     </div>
+                    <!-- Download Progress -->
+                    <div class="update-progress" id="update-progress" style="display: none;">
+                        <div class="update-progress-header">
+                            <span class="update-phase" id="update-phase">Downloading</span>
+                            <span class="update-progress-percent" id="update-progress-percent">0%</span>
+                        </div>
+                        <div class="update-progress-bar">
+                            <div class="update-progress-fill" id="update-progress-fill"></div>
+                        </div>
+                        <div class="update-progress-text" id="update-progress-text">Starting...</div>
+                        <button class="settings-item focusable update-cancel-btn" data-action="cancel-update">
+                            <span class="icon">&#10006;</span>
+                            <span>Cancel</span>
+                        </button>
+                    </div>
+                    <!-- Error Message -->
+                    <div class="update-error-message" id="update-error-message" style="display: none;"></div>
                 </div>
                 <div class="settings-divider"></div>
                 <div class="settings-version">
@@ -175,6 +197,7 @@
                 <span class="hint"><kbd>Y</kbd> Add App</span>
                 <span class="hint"><kbd>LB</kbd> <span class="tab-arrow">&#9664;</span> Tab <span class="tab-arrow">&#9654;</span> <kbd>RB</kbd></span>
             </div>
+            <div class="footer-version" id="footer-version">v1.0.0</div>
         </footer>
     </div>
 

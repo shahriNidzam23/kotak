@@ -389,6 +389,15 @@ body.cursor-hidden * {
     margin: 0 2px;
 }
 
+.footer-version {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--bg-glass-border);
+}
+
 .hint .tab-arrow {
     color: var(--accent);
     font-size: 0.9em;
@@ -629,6 +638,97 @@ body.cursor-hidden * {
 
 .update-up-to-date {
     color: var(--success);
+}
+
+/* Update Progress */
+.update-progress {
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: rgba(94, 114, 228, 0.1);
+    border-radius: var(--tile-radius);
+    margin: var(--spacing-sm) 0;
+}
+
+.update-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.update-phase {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.update-progress-percent {
+    font-size: var(--font-size-md);
+    color: var(--text-secondary);
+}
+
+.update-progress-bar {
+    height: 8px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: var(--spacing-sm);
+}
+
+.update-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.update-progress-text {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+}
+
+.update-cancel-btn {
+    background: transparent !important;
+    border: 1px solid var(--danger) !important;
+    color: var(--danger) !important;
+}
+
+.update-cancel-btn:hover,
+.update-cancel-btn.focused {
+    background: rgba(244, 67, 54, 0.2) !important;
+}
+
+.update-error-message {
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: rgba(244, 67, 54, 0.1);
+    border-radius: var(--tile-radius);
+    margin: var(--spacing-sm) 0;
+    color: var(--danger);
+    font-size: var(--font-size-sm);
+}
+
+/* Toast Message */
+.toast-message {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--tile-radius);
+    border: 2px solid var(--accent);
+    font-size: var(--font-size-md);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 10000;
+    pointer-events: none;
+}
+
+.toast-message.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 .settings-version {

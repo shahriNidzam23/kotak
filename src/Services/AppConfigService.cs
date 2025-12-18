@@ -146,6 +146,22 @@ public class AppConfigService
     // App Management
     // ============================
 
+    /// <summary>
+    /// Reload config from disk (refresh without restart)
+    /// </summary>
+    public bool ReloadConfig()
+    {
+        try
+        {
+            _config = LoadConfig();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public List<AppEntry> GetApps()
     {
         return _config.Apps;

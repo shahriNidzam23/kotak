@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Text.Json;
 
@@ -156,6 +157,178 @@ public class UpdateService
         {
             Debug.WriteLine($"DownloadUpdate error: {ex.Message}");
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Extract the downloaded zip to a temp folder
+    /// </summary>
+    public async Task<string?> ExtractUpdateAsync(string zipPath, Action<string>? onStatus = null)
+    {
+        try
+        {
+            var extractPath = Path.Combine(Path.GetTempPath(), "KotakUpdate", "extracted");
+
+            // Clean up existing extraction folder
+            if (Directory.Exists(extractPath))
+            {
+                onStatus?.Invoke("Cleaning up previous extraction...");
+                Directory.Delete(extractPath, true);
+            }
+
+            Directory.CreateDirectory(extractPath);
+
+            onStatus?.Invoke("Extracting update files...");
+            await Task.Run(() => ZipFile.ExtractToDirectory(zipPath, extractPath));
+
+            return extractPath;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"ExtractUpdate error: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Generate the batch script for update installation
+    /// </summary>
+    public string? GenerateUpdateBatchScript(string extractedPath)
+    {
+        try
+        {
+            var appDir = AppContext.BaseDirectory.TrimEnd('\\', '/');
+            var kotakExe = Environment.ProcessPath ?? Path.Combine(appDir, "Kotak.exe");
+            var batchPath = Path.Combine(Path.GetTempPath(), "KotakUpdate", "update_kotak.bat");
+
+            var batchContent = $@"@echo off
+setlocal enabledelayedexpansion
+title KOTAK Updater
+
+echo ========================================
+echo KOTAK Auto-Updater
+echo ========================================
+echo.
+
+REM Wait for Kotak.exe to close (with timeout)
+echo Waiting for KOTAK to close...
+set /a TIMEOUT_COUNT=0
+:wait_loop
+tasklist /FI ""IMAGENAME eq Kotak.exe"" 2>NUL | find /I /N ""Kotak.exe"">NUL
+if ""%ERRORLEVEL%""==""0"" (
+    set /a TIMEOUT_COUNT+=1
+    if !TIMEOUT_COUNT! GEQ 30 (
+        echo ERROR: Timeout waiting for KOTAK to close.
+        echo Please close KOTAK manually and try again.
+        pause
+        exit /b 1
+    )
+    timeout /t 1 /nobreak >nul
+    goto wait_loop
+)
+echo KOTAK closed.
+echo.
+
+REM Create backup folder with timestamp
+for /f ""tokens=2 delims=="" %%a in ('wmic OS Get localdatetime /value') do set ""dt=%%a""
+set ""BACKUP_DIR={appDir}\backup_!dt:~0,8!_!dt:~8,6!""
+echo Creating backup at: !BACKUP_DIR!
+mkdir ""!BACKUP_DIR!"" 2>nul
+
+REM Backup existing files
+echo Backing up existing files...
+if exist ""{appDir}\Kotak.exe"" copy /Y ""{appDir}\Kotak.exe"" ""!BACKUP_DIR!\Kotak.exe"" >nul
+if exist ""{appDir}\WebUI"" xcopy /E /I /Q /Y ""{appDir}\WebUI"" ""!BACKUP_DIR!\WebUI"" >nul
+
+REM Copy new files from extracted update
+echo.
+echo Installing update...
+
+REM Copy new Kotak.exe
+if exist ""{extractedPath}\Kotak.exe"" (
+    copy /Y ""{extractedPath}\Kotak.exe"" ""{appDir}\Kotak.exe""
+    if !ERRORLEVEL! NEQ 0 (
+        echo ERROR: Failed to copy Kotak.exe
+        echo Restoring backup...
+        copy /Y ""!BACKUP_DIR!\Kotak.exe"" ""{appDir}\Kotak.exe""
+        pause
+        exit /b 1
+    )
+    echo   Updated: Kotak.exe
+)
+
+REM Copy WebUI folder
+if exist ""{extractedPath}\WebUI"" (
+    xcopy /E /I /Q /Y ""{extractedPath}\WebUI"" ""{appDir}\WebUI""
+    if !ERRORLEVEL! NEQ 0 (
+        echo ERROR: Failed to copy WebUI
+        echo Restoring backup...
+        xcopy /E /I /Q /Y ""!BACKUP_DIR!\WebUI"" ""{appDir}\WebUI""
+        pause
+        exit /b 1
+    )
+    echo   Updated: WebUI folder
+)
+
+REM Copy PDB files (if exist)
+for %%f in (""{extractedPath}\*.pdb"") do (
+    copy /Y ""%%f"" ""{appDir}\"" >nul
+    echo   Updated: %%~nxf
+)
+
+REM DO NOT copy config.json or thumbnails (preserve user data)
+echo.
+echo Preserved user data: config.json, thumbnails/
+
+REM Cleanup temp files
+echo.
+echo Cleaning up temporary files...
+rd /S /Q ""{Path.Combine(Path.GetTempPath(), "KotakUpdate")}"" 2>nul
+
+REM Restart KOTAK
+echo.
+echo ========================================
+echo Update complete! Starting KOTAK...
+echo ========================================
+timeout /t 2 /nobreak >nul
+start """" ""{kotakExe}""
+
+exit
+";
+
+            File.WriteAllText(batchPath, batchContent);
+            return batchPath;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"GenerateUpdateBatchScript error: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Launch the update batch script
+    /// </summary>
+    public bool LaunchUpdateScript(string batchPath)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c \"{batchPath}\"",
+                UseShellExecute = true,
+                CreateNoWindow = false,
+                WindowStyle = ProcessWindowStyle.Normal
+            };
+
+            Process.Start(psi);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"LaunchUpdateScript error: {ex.Message}");
+            return false;
         }
     }
 
