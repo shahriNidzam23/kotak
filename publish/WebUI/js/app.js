@@ -376,6 +376,85 @@ async function loadVolumeAndBrightness() {
     }
 }
 
+function loadVersion() {
+    if (!bridge) return;
+
+    try {
+        const version = bridge.GetVersion();
+        const versionEl = document.getElementById('app-version');
+        if (versionEl) {
+            versionEl.textContent = `v${version}`;
+        }
+    } catch (e) {
+        console.error('Error loading version:', e);
+    }
+}
+
+// ============================
+// Update Functions
+// ============================
+let updateInfo = null;
+
+function checkForUpdates() {
+    if (!bridge) return;
+
+    const statusEl = document.getElementById('update-status');
+    const textEl = document.getElementById('update-text');
+    const btnEl = document.getElementById('check-update-btn');
+    const availableEl = document.getElementById('update-available');
+
+    // Show checking state
+    statusEl.classList.add('checking');
+    textEl.textContent = 'Checking for updates...';
+    if (btnEl) btnEl.style.display = 'none';
+    if (availableEl) availableEl.style.display = 'none';
+
+    try {
+        const json = bridge.CheckForUpdates();
+        const result = JSON.parse(json);
+        updateInfo = result;
+
+        statusEl.classList.remove('checking');
+
+        if (result.error) {
+            textEl.textContent = `Error: ${result.error}`;
+            textEl.classList.add('update-error');
+            if (btnEl) btnEl.style.display = '';
+        } else if (result.hasUpdate) {
+            textEl.textContent = `Update available!`;
+            textEl.classList.remove('update-error');
+            textEl.classList.add('update-up-to-date');
+
+            // Show update available section
+            if (availableEl) {
+                availableEl.style.display = '';
+                const versionEl = document.getElementById('update-latest-version');
+                if (versionEl) versionEl.textContent = `v${result.latestVersion}`;
+            }
+            if (btnEl) btnEl.style.display = 'none';
+            updateFocusableElements();
+        } else {
+            textEl.textContent = `You're up to date! (v${result.currentVersion})`;
+            textEl.classList.remove('update-error');
+            textEl.classList.add('update-up-to-date');
+            if (btnEl) btnEl.style.display = '';
+        }
+    } catch (e) {
+        console.error('Error checking for updates:', e);
+        statusEl.classList.remove('checking');
+        textEl.textContent = 'Failed to check for updates';
+        textEl.classList.add('update-error');
+        if (btnEl) btnEl.style.display = '';
+    }
+}
+
+function downloadUpdate() {
+    if (!bridge || !updateInfo || !updateInfo.releaseUrl) return;
+
+    // Open the releases page in browser
+    bridge.OpenReleasesPage();
+}
+
 function updateVolumeDisplay(level) {
     level = Math.max(0, Math.min(100, level));
     document.getElementById('volume-value').textContent = `${level}%`;
@@ -724,6 +803,12 @@ function activateFocused() {
         case 'exit':
             exitLauncher();
             break;
+        case 'check-update':
+            checkForUpdates();
+            break;
+        case 'download-update':
+            downloadUpdate();
+            break;
         case 'confirm-yes':
             handleConfirmYes();
             break;
@@ -864,6 +949,12 @@ function handleMouseClick(e) {
             break;
         case 'exit':
             exitLauncher();
+            break;
+        case 'check-update':
+            checkForUpdates();
+            break;
+        case 'download-update':
+            downloadUpdate();
             break;
         case 'confirm-yes':
             handleConfirmYes();
@@ -1344,6 +1435,7 @@ function switchTab(tabName) {
     if (tabName === 'settings') {
         loadVolumeAndBrightness();
         updateWifiStatus();
+        loadVersion();
     }
 
     // Update focusable elements for new tab and focus first item

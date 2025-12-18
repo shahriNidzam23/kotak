@@ -21,14 +21,15 @@ echo ========================================
 echo Publishing KOTAK (Release)
 echo ========================================
 
-REM Read current version from csproj
+REM Read current version from csproj using PowerShell for reliability
 set "CSPROJ=src\Kotak.csproj"
-for /f "tokens=2 delims=<>" %%a in ('findstr /r "<Version>[0-9]*\.[0-9]*\.[0-9]*</Version>" %CSPROJ%') do set "CURRENT_VERSION=%%a"
+set "CURRENT_VERSION="
+for /f "delims=" %%a in ('powershell -Command "([xml](Get-Content '%CSPROJ%')).Project.PropertyGroup.Version | Where-Object { $_ -match '^\d+\.\d+\.\d+$' } | Select-Object -First 1"') do set "CURRENT_VERSION=%%a"
 
-if "%CURRENT_VERSION%"=="" set "CURRENT_VERSION=1.0.0"
+if "!CURRENT_VERSION!"=="" set "CURRENT_VERSION=1.0.0"
 
 REM Parse version components
-for /f "tokens=1,2,3 delims=." %%a in ("%CURRENT_VERSION%") do (
+for /f "tokens=1,2,3 delims=." %%a in ("!CURRENT_VERSION!") do (
     set "MAJOR=%%a"
     set "MINOR=%%b"
     set "PATCH=%%c"
@@ -145,7 +146,7 @@ echo Creating GitHub Release v!RELEASE_VER!
 echo ========================================
 
 REM Git operations
-git add src\Kotak.csproj
+git add .
 git commit -m "Release v!RELEASE_VER!" 2>nul
 git tag -a "v!RELEASE_VER!" -m "Release v!RELEASE_VER!" 2>nul
 
@@ -190,8 +191,8 @@ goto end
 
 :showversion
 set "CSPROJ=src\Kotak.csproj"
-for /f "tokens=2 delims=<>" %%a in ('findstr /r "<Version>[0-9]*\.[0-9]*\.[0-9]*</Version>" %CSPROJ%') do set "CURRENT_VERSION=%%a"
-echo KOTAK version: %CURRENT_VERSION%
+for /f "delims=" %%a in ('powershell -Command "([xml](Get-Content '%CSPROJ%')).Project.PropertyGroup.Version | Where-Object { $_ -match '^\d+\.\d+\.\d+$' } | Select-Object -First 1"') do set "SHOW_VERSION=%%a"
+echo KOTAK version: !SHOW_VERSION!
 goto end
 
 :help

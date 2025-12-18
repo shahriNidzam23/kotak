@@ -6,7 +6,7 @@ A fullscreen, TV-friendly launcher for Windows 10/11 Mini PCs. Built with WPF (.
 
 1. **Turn any Mini PC into a TV Box** - Use your Windows Mini PC as a dedicated media center with a couch-friendly UI optimized for TV viewing and gamepad navigation
 2. **Lightweight App Launcher** - Simple, fast, and focused. No bloat, just launch your apps
-3. **Because I can** - Similar apps exist, but sometimes the best way to learn is to build your own (and procrastinate productively)
+3. **Because I can** - Similar apps exist, but I love to procrastinate productively
 
 ## Features
 

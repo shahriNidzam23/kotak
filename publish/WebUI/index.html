@@ -138,6 +138,32 @@
                     <span class="icon">&#128682;</span>
                     <span>Exit Launcher</span>
                 </button>
+                <div class="settings-divider"></div>
+                <div class="settings-update" id="update-section">
+                    <div class="update-status" id="update-status">
+                        <span class="icon">&#8635;</span>
+                        <span id="update-text">Check for updates</span>
+                    </div>
+                    <button class="settings-item focusable" data-action="check-update" id="check-update-btn">
+                        <span class="icon">&#128269;</span>
+                        <span>Check for Updates</span>
+                    </button>
+                    <div class="update-available" id="update-available" style="display: none;">
+                        <div class="update-info">
+                            <span class="update-badge">New version available!</span>
+                            <span class="update-version" id="update-latest-version">v0.0.0</span>
+                        </div>
+                        <button class="settings-item focusable update-download-btn" data-action="download-update">
+                            <span class="icon">&#128229;</span>
+                            <span>Download Update</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="settings-divider"></div>
+                <div class="settings-version">
+                    <span>KOTAK</span>
+                    <span class="version-number" id="app-version">v1.0.0</span>
+                </div>
             </div>
         </main>
 

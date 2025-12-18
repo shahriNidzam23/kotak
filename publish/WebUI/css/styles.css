@@ -550,6 +550,103 @@ body.cursor-hidden * {
     margin: var(--spacing-sm) 0;
 }
 
+/* Update Section */
+.settings-update {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) 0;
+}
+
+.update-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.update-status .icon {
+    font-size: var(--font-size-md);
+}
+
+.update-status.checking .icon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.update-available {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: rgba(55, 255, 148, 0.1);
+    border-radius: var(--tile-radius);
+    margin: 0 var(--spacing-sm);
+}
+
+.update-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.update-badge {
+    background: var(--accent-secondary);
+    color: var(--bg-primary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.update-version {
+    color: var(--accent-secondary);
+    font-size: var(--font-size-md);
+    font-weight: 600;
+}
+
+.update-download-btn {
+    background: var(--accent-green) !important;
+    color: var(--bg-primary) !important;
+}
+
+.update-download-btn:hover,
+.update-download-btn.focused {
+    background: var(--accent-secondary) !important;
+}
+
+.update-error {
+    color: var(--danger);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--font-size-sm);
+}
+
+.update-up-to-date {
+    color: var(--success);
+}
+
+.settings-version {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    opacity: 0.7;
+}
+
+.settings-version .version-number {
+    color: var(--accent);
+    font-weight: 600;
+}
+
 /* Settings Slider Controls (Volume/Brightness) */
 .settings-slider-item {
     display: flex;
