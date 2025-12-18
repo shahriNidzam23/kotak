@@ -1,0 +1,33 @@
+<Window x:Class="Kotak.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="KOTAK"
+        WindowStyle="None"
+        WindowState="Maximized"
+        ResizeMode="NoResize"
+        Topmost="False"
+        Background="Black">
+
+    <Grid>
+        <wv2:WebView2 x:Name="webView"
+                      DefaultBackgroundColor="Black"/>
+
+        <!-- Close hint overlay (visible when web app is active) -->
+        <Border x:Name="closeHintOverlay"
+                Visibility="Collapsed"
+                Background="#80000000"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="20"
+                Padding="16,8"
+                CornerRadius="8">
+            <StackPanel>
+                <TextBlock Text="LB+RB: Alt+Tab | Hold LB+RB+Start (2s): Back"
+                           Foreground="White"
+                           FontSize="14"
+                           FontFamily="Segoe UI"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

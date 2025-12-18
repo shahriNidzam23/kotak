@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOTAK</title>
+    <link rel="stylesheet" href="css/styles.css?v=6">
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo-container">
+                <img src="assets/logo.svg" alt="Ada.IR" class="splash-logo">
+            </div>
+            <div class="splash-loader">
+                <div class="splash-loader-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Grid Screen -->
+    <div id="main-screen" class="screen active">
+        <header class="header">
+            <h1 class="logo">KOTAK</h1>
+            <div class="header-datetime">
+                <span class="date" id="header-date"></span>
+                <span class="time" id="header-time"></span>
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="main-tabs">
+            <button class="tab-btn active focusable" data-action="switch-tab" data-tab="apps">
+                <span class="tab-icon">&#128187;</span>
+                <span class="tab-label">Apps</span>
+            </button>
+            <button class="tab-btn focusable" data-action="switch-tab" data-tab="utilities">
+                <span class="tab-icon">&#128295;</span>
+                <span class="tab-label">Utilities</span>
+            </button>
+            <button class="tab-btn focusable" data-action="switch-tab" data-tab="settings">
+                <span class="tab-icon">&#9881;</span>
+                <span class="tab-label">Settings</span>
+            </button>
+        </nav>
+
+        <!-- Tab Content: Apps -->
+        <main id="tab-apps" class="tab-content active">
+            <div class="app-grid-container">
+                <div id="app-grid" class="app-grid">
+                    <!-- App tiles will be dynamically inserted here -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Tab Content: Utilities -->
+        <main id="tab-utilities" class="tab-content">
+            <div class="utilities-grid">
+                <button class="utility-tile focusable" data-action="open-explorer">
+                    <span class="utility-icon">&#128193;</span>
+                    <span class="utility-name">File Explorer</span>
+                    <span class="utility-desc">Browse files on this PC</span>
+                </button>
+                <button class="utility-tile focusable" data-action="open-transfer">
+                    <span class="utility-icon">&#128225;</span>
+                    <span class="utility-name">Simple Transfer</span>
+                    <span class="utility-desc">Receive files via network</span>
+                </button>
+            </div>
+        </main>
+
+        <!-- Tab Content: Settings -->
+        <main id="tab-settings" class="tab-content">
+            <div class="settings-menu">
+                <button class="settings-item wifi-item focusable" data-action="wifi">
+                    <span class="icon" id="settings-wifi-icon">&#128246;</span>
+                    <div class="wifi-info-col">
+                        <span>Wi-Fi</span>
+                        <span class="wifi-ssid-label" id="settings-wifi-label">Not connected</span>
+                    </div>
+                </button>
+                <div class="settings-divider"></div>
+                <!-- Volume Control -->
+                <div class="settings-slider-item">
+                    <div class="slider-header">
+                        <span class="icon">&#128266;</span>
+                        <span>Volume</span>
+                        <span class="slider-value" id="volume-value">50%</span>
+                    </div>
+                    <div class="slider-controls">
+                        <button class="slider-btn focusable" data-action="volume-down">&#8722;</button>
+                        <div class="slider-track">
+                            <div class="slider-fill" id="volume-fill" style="width: 50%"></div>
+                        </div>
+                        <button class="slider-btn focusable" data-action="volume-up">+</button>
+                    </div>
+                </div>
+                <!-- Brightness Control -->
+                <div class="settings-slider-item">
+                    <div class="slider-header">
+                        <span class="icon">&#9728;</span>
+                        <span>Brightness</span>
+                        <span class="slider-value" id="brightness-value">100%</span>
+                    </div>
+                    <div class="slider-controls">
+                        <button class="slider-btn focusable" data-action="brightness-down">&#8722;</button>
+                        <div class="slider-track">
+                            <div class="slider-fill" id="brightness-fill" style="width: 100%"></div>
+                        </div>
+                        <button class="slider-btn focusable" data-action="brightness-up">+</button>
+                    </div>
+                </div>
+                <div class="settings-divider"></div>
+                <button class="settings-item focusable" data-action="add-app">
+                    <span class="icon">&#10133;</span>
+                    <span>Add Application</span>
+                </button>
+                <button class="settings-item focusable" data-action="controller-settings">
+                    <span class="icon">&#127918;</span>
+                    <span>Controller Settings</span>
+                </button>
+                <div class="settings-divider"></div>
+                <button class="settings-item focusable" data-action="sleep">
+                    <span class="icon">&#9790;</span>
+                    <span>Sleep</span>
+                </button>
+                <button class="settings-item focusable" data-action="restart">
+                    <span class="icon">&#8635;</span>
+                    <span>Restart PC</span>
+                </button>
+                <button class="settings-item focusable" data-action="shutdown">
+                    <span class="icon">&#9211;</span>
+                    <span>Shutdown PC</span>
+                </button>
+                <div class="settings-divider"></div>
+                <button class="settings-item focusable" data-action="exit">
+                    <span class="icon">&#128682;</span>
+                    <span>Exit Launcher</span>
+                </button>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="controls-hint" id="main-controls-hint">
+                <span class="hint"><kbd>A</kbd><span class="separator">/</span><kbd class="keyboard">Enter</kbd> Select</span>
+                <span class="hint"><kbd>B</kbd><span class="separator">/</span><kbd class="keyboard">Esc</kbd> Back</span>
+                <span class="hint"><kbd>X</kbd><span class="separator">/</span><kbd class="keyboard">Del</kbd> Delete</span>
+                <span class="hint"><kbd>Y</kbd> Add App</span>
+                <span class="hint"><kbd>LB</kbd> <span class="tab-arrow">&#9664;</span> Tab <span class="tab-arrow">&#9654;</span> <kbd>RB</kbd></span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Wi-Fi Screen -->
+    <div id="wifi-screen" class="screen">
+        <header class="header">
+            <h2>Wi-Fi Networks</h2>
+            <button class="back-btn focusable" data-action="back">&#8592; Back</button>
+        </header>
+        <main class="wifi-container">
+            <div id="wifi-status" class="wifi-status-bar">
+                <span id="wifi-current">Checking...</span>
+                <button id="wifi-refresh" class="refresh-btn focusable" data-action="refresh-wifi">Refresh</button>
+            </div>
+            <div id="wifi-list" class="wifi-list">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Controller Settings Screen -->
+    <div id="controller-screen" class="screen">
+        <header class="header">
+            <h2>Controller Settings</h2>
+            <button class="back-btn focusable" data-action="back">&#8592; Back</button>
+        </header>
+        <main class="controller-container">
+            <div class="controller-status" id="controller-status">
+                <span class="status-icon">&#127918;</span>
+                <span class="status-text">Checking controller...</span>
+            </div>
+            <p class="controller-hint">Click a button below, then press the corresponding button on your gamepad to map it. You can also use keyboard keys 1-9 to simulate B1-B9.</p>
+            <div class="controller-mapping">
+                <button class="mapping-item focusable" data-action="map-button" data-button="a">
+                    <span class="button-label">A (Select)</span>
+                    <span class="button-value" id="btn-a-value">B2</span>
+                </button>
+                <button class="mapping-item focusable" data-action="map-button" data-button="b">
+                    <span class="button-label">B (Back)</span>
+                    <span class="button-value" id="btn-b-value">B3</span>
+                </button>
+                <button class="mapping-item focusable" data-action="map-button" data-button="x">
+                    <span class="button-label">X (Context)</span>
+                    <span class="button-value" id="btn-x-value">B1</span>
+                </button>
+                <button class="mapping-item focusable" data-action="map-button" data-button="y">
+                    <span class="button-label">Y (Add App)</span>
+                    <span class="button-value" id="btn-y-value">B4</span>
+                </button>
+                <button class="mapping-item focusable" data-action="map-button" data-button="lb">
+                    <span class="button-label">LB (Left Bumper)</span>
+                    <span class="button-value" id="btn-lb-value">B5</span>
+                </button>
+                <button class="mapping-item focusable" data-action="map-button" data-button="rb">
+                    <span class="button-label">RB (Right Bumper)</span>
+                    <span class="button-value" id="btn-rb-value">B6</span>
+                </button>
+                <button class="mapping-item focusable" data-action="map-button" data-button="back">
+                    <span class="button-label">Back/Select</span>
+                    <span class="button-value" id="btn-back-value">B7</span>
+                </button>
+                <button class="mapping-item focusable" data-action="map-button" data-button="start">
+                    <span class="button-label">Start (Menu)</span>
+                    <span class="button-value" id="btn-start-value">B8</span>
+                </button>
+            </div>
+            <p class="controller-note">
+                <strong>LB + RB (tap):</strong> Alt+Tab (switch windows)<br>
+                <strong>LB + RB + Start (hold 2s):</strong> Return to KOTAK
+            </p>
+        </main>
+    </div>
+
+    <!-- File Explorer Screen -->
+    <div id="explorer-screen" class="screen">
+        <header class="header">
+            <h2 id="explorer-title">File Explorer</h2>
+            <button class="back-btn focusable" data-action="back">&#8592; Back</button>
+        </header>
+        <div class="explorer-toolbar">
+            <div class="explorer-drives">
+                <span class="drives-icon">&#128191;</span>
+                <select id="explorer-drive-select" class="drive-select focusable" data-action="explorer-drive-change">
+                    <!-- Drive options will be populated dynamically -->
+                </select>
+            </div>
+            <div class="explorer-path" id="explorer-path">C:\</div>
+            <button class="explorer-btn focusable" data-action="explorer-up">&#8593; Up</button>
+            <button class="explorer-btn focusable" data-action="explorer-home">&#127968; Home</button>
+        </div>
+        <main class="explorer-container">
+            <div id="explorer-list" class="explorer-list">
+                <!-- File/folder items will be dynamically inserted here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Simple Transfer Screen -->
+    <div id="transfer-screen" class="screen">
+        <header class="header">
+            <h2>KOTAK Transfer</h2>
+            <button class="back-btn focusable" data-action="back">&#8592; Back</button>
+        </header>
+        <main class="transfer-container">
+            <div class="transfer-status" id="transfer-status">
+                <span class="status-icon">&#128225;</span>
+                <span class="status-text">Server Stopped</span>
+            </div>
+            <div class="transfer-info">
+                <p>Receive files from other devices on your network.</p>
+                <p>Files will be saved to: <strong id="transfer-save-path">Downloads</strong></p>
+            </div>
+            <div class="transfer-controls">
+                <button class="btn primary large focusable" id="transfer-toggle-btn" data-action="toggle-transfer">
+                    Start Server
+                </button>
+                <button class="btn focusable" data-action="change-transfer-path">Change Save Location</button>
+            </div>
+            <div class="transfer-url-box hidden" id="transfer-url-box">
+                <p>Send files to this address:</p>
+                <div class="transfer-url" id="transfer-url">http://192.168.1.100:8080</div>
+                <p class="transfer-hint">Open this URL on another device to upload files</p>
+            </div>
+            <div class="transfer-log" id="transfer-log">
+                <!-- Transfer log entries will appear here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Controller Mapping Dialog -->
+    <div id="mapping-dialog" class="dialog hidden">
+        <div class="dialog-content mapping-dialog-content">
+            <h3>Press a button on your gamepad</h3>
+            <p id="mapping-button-label">Mapping: A Button</p>
+            <div class="mapping-indicator">
+                <div class="mapping-pulse"></div>
+                <span id="mapping-detected">Waiting for input...</span>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn focusable" data-action="cancel-mapping">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add App Dialog -->
+    <div id="add-app-dialog" class="dialog hidden">
+        <div class="dialog-content">
+            <h3>Add Application</h3>
+            <div class="form-group">
+                <label>Application Name</label>
+                <input type="text" id="app-name-input" class="focusable" placeholder="Enter app name">
+            </div>
+            <div class="form-group">
+                <label>Application Path</label>
+                <div class="path-input-group">
+                    <input type="text" id="app-path-input" class="focusable" placeholder="Path to executable" readonly>
+                    <button id="browse-btn" class="browse-btn focusable" data-action="browse-exe">Browse</button>
+                </div>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn primary focusable" data-action="confirm-add-app">Add</button>
+                <button class="btn focusable" data-action="cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wi-Fi Password Dialog -->
+    <div id="password-dialog" class="dialog hidden">
+        <div class="dialog-content">
+            <h3>Enter Wi-Fi Password</h3>
+            <p id="wifi-ssid-label"></p>
+            <input type="password" id="wifi-password" class="focusable" placeholder="Password">
+            <div class="dialog-actions">
+                <button class="btn primary focusable" data-action="connect-wifi">Connect</button>
+                <button class="btn focusable" data-action="cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Dialog -->
+    <div id="confirm-dialog" class="dialog hidden">
+        <div class="dialog-content">
+            <h3 id="confirm-title">Confirm</h3>
+            <p id="confirm-message"></p>
+            <div class="dialog-actions">
+                <button class="btn danger focusable" data-action="confirm-yes">Yes</button>
+                <button class="btn focusable" data-action="confirm-no">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu for App Tile -->
+    <div id="context-menu" class="context-menu hidden">
+        <button class="context-item focusable" data-action="remove-app">
+            <span class="icon">&#128465;</span>
+            <span>Remove App</span>
+        </button>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
