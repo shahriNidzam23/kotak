@@ -154,11 +154,19 @@ echo Pushing to GitHub...
 git push
 git push --tags
 
-REM Create GitHub release with exe
-echo Creating release on GitHub...
-gh release create "v!RELEASE_VER!" "publish\Kotak.exe" --title "KOTAK v!RELEASE_VER!" --notes "Release v!RELEASE_VER!" --latest
+REM Create zip file of publish folder
+echo Creating release zip...
+powershell -Command "Compress-Archive -Path 'publish\*' -DestinationPath 'Kotak-v!RELEASE_VER!.zip' -Force"
 
-if !ERRORLEVEL! EQU 0 (
+REM Create GitHub release with zip
+echo Creating release on GitHub...
+gh release create "v!RELEASE_VER!" "Kotak-v!RELEASE_VER!.zip" --title "KOTAK v!RELEASE_VER!" --notes "Release v!RELEASE_VER!" --latest
+set "RELEASE_RESULT=!ERRORLEVEL!"
+
+REM Clean up zip file
+del "Kotak-v!RELEASE_VER!.zip" 2>nul
+
+if !RELEASE_RESULT! EQU 0 (
     echo.
     echo ========================================
     echo Release v!RELEASE_VER! created!
