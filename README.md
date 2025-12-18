@@ -205,3 +205,12 @@ Install the [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-e
 ## License
 
 MIT License
+
+
+## TODO
+- Add TV channel support via IPTV links
+- Add Radio streaming support
+- Improve error handling and logging
+- Add config refresh without restart
+- Add TV remote support
+
