@@ -2,6 +2,12 @@
 
 A fullscreen, TV-friendly launcher for Windows 10/11 Mini PCs. Built with WPF (.NET 8) and WebView2. Coded by Claude Code.
 
+## Why was KOTAK developed?
+
+1. **Turn any Mini PC into a TV Box** - Use your Windows Mini PC as a dedicated media center with a couch-friendly UI optimized for TV viewing and gamepad navigation
+2. **Lightweight App Launcher** - Simple, fast, and focused. No bloat, just launch your apps
+3. **Because I can** - Similar apps exist, but sometimes the best way to learn is to build your own (and procrastinate productively)
+
 ## Features
 
 - **Gamepad Support** - Full XInput controller navigation (Xbox, Fantech, etc.)
@@ -29,6 +35,8 @@ kotak.bat run
 ```cmd
 kotak.bat run       # Build and run
 kotak.bat publish   # Create Release executable
+kotak.bat release   # Publish and create GitHub release
+kotak.bat version   # Show current version
 kotak.bat clean     # Clean build outputs
 ```
 
@@ -152,6 +160,33 @@ Manually edit `config.json` and add entries following the format above.
 
 ### Adding Custom Thumbnails
 Place PNG/JPG images in the `thumbnails/` folder and reference them in `config.json`.
+
+## Updates
+
+### Checking for Updates
+1. Go to **Settings** tab
+2. Click **Check for Updates**
+3. If an update is available, click **Download Update** to open the releases page
+4. Download the new `Kotak.exe` and replace the old one
+
+### Creating a Release (Developers)
+
+To create a new GitHub release:
+
+```cmd
+kotak.bat release
+```
+
+This command:
+1. Prompts for version type (Major/Minor/Patch)
+2. Builds the Release executable
+3. Commits and tags the version
+4. Pushes to GitHub
+5. Creates a GitHub release with `Kotak.exe` attached
+
+**Prerequisites:**
+- [GitHub CLI](https://cli.github.com/) installed
+- Authenticated: run `gh auth login`
 
 ## Troubleshooting
 
