@@ -274,6 +274,53 @@ public class AppConfigService
     }
 
     // ============================
+    // IPTV Management
+    // ============================
+
+    public List<IptvPlaylist> GetIptvPlaylists()
+    {
+        return _config.IptvPlaylists;
+    }
+
+    public IptvPlaylist? GetIptvPlaylistById(string id)
+    {
+        return _config.IptvPlaylists.FirstOrDefault(p => p.Id == id);
+    }
+
+    public bool AddIptvPlaylist(IptvPlaylist playlist)
+    {
+        // Check for duplicate name
+        if (_config.IptvPlaylists.Any(p => p.Name.Equals(playlist.Name, StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        _config.IptvPlaylists.Add(playlist);
+        SaveConfig(_config);
+        return true;
+    }
+
+    public bool RemoveIptvPlaylist(string id)
+    {
+        var playlist = _config.IptvPlaylists.FirstOrDefault(p => p.Id == id);
+        if (playlist == null) return false;
+
+        _config.IptvPlaylists.Remove(playlist);
+        SaveConfig(_config);
+        return true;
+    }
+
+    public bool UpdateIptvPlaylist(IptvPlaylist updatedPlaylist)
+    {
+        var index = _config.IptvPlaylists.FindIndex(p => p.Id == updatedPlaylist.Id);
+        if (index < 0) return false;
+
+        _config.IptvPlaylists[index] = updatedPlaylist;
+        SaveConfig(_config);
+        return true;
+    }
+
+    // ============================
     // Utilities
     // ============================
 

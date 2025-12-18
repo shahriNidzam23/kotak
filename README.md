@@ -210,6 +210,7 @@ MIT License
 ## TODO
 - Add TV channel support via IPTV links
 - Add Radio streaming support
-- Improve error handling and logging
-- Add TV remote support
+- Add USB TV remote support
+- Desktop view in utilities
+- Browser view in utilities
 

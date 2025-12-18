@@ -21,6 +21,7 @@ public class JsBridge
     private readonly ProcessManagerService _processManagerService;
     private readonly SimpleTransferService _transferService;
     private readonly UpdateService _updateService;
+    private readonly IptvService _iptvService;
 
     public JsBridge(MainWindow mainWindow, AppConfigService configService)
     {
@@ -33,6 +34,7 @@ public class JsBridge
         _processManagerService = new ProcessManagerService();
         _transferService = new SimpleTransferService();
         _updateService = new UpdateService();
+        _iptvService = new IptvService();
 
         // Wire up transfer events to send to WebView
         _transferService.OnLogEntry += (entry) =>
@@ -248,6 +250,31 @@ public class JsBridge
         {
             _mainWindow.Close();
         });
+    }
+
+    /// <summary>
+    /// Show desktop by minimizing all windows
+    /// </summary>
+    public void ShowDesktop()
+    {
+        _systemService.ShowDesktop();
+    }
+
+    /// <summary>
+    /// Open Microsoft Edge browser
+    /// </summary>
+    public void OpenBrowser()
+    {
+        _systemService.OpenBrowser();
+    }
+
+    /// <summary>
+    /// Start Tailscale VPN
+    /// </summary>
+    public string StartTailscale()
+    {
+        var result = _systemService.StartTailscale();
+        return JsonSerializer.Serialize(new { success = result.success, message = result.message });
     }
 
     // ============================
@@ -775,5 +802,168 @@ public class JsBridge
     public void CancelUpdateDownload()
     {
         _downloadCts?.Cancel();
+    }
+
+    // ============================
+    // IPTV Management
+    // ============================
+
+    /// <summary>
+    /// Get all IPTV playlists
+    /// </summary>
+    public string GetIptvPlaylists()
+    {
+        try
+        {
+            var playlists = _configService.GetIptvPlaylists();
+            return JsonSerializer.Serialize(playlists.Select(p => new
+            {
+                id = p.Id,
+                name = p.Name,
+                url = p.Url,
+                lastUpdated = p.LastUpdated,
+                channelCount = p.Channels.Count
+            }));
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get channels for a specific playlist
+    /// </summary>
+    public string GetPlaylistChannels(string playlistId)
+    {
+        try
+        {
+            var playlist = _configService.GetIptvPlaylistById(playlistId);
+            if (playlist == null)
+            {
+                return JsonSerializer.Serialize(new { error = "Playlist not found" });
+            }
+
+            return JsonSerializer.Serialize(playlist.Channels.Select(c => new
+            {
+                id = c.Id,
+                name = c.Name,
+                url = c.Url,
+                logo = c.Logo,
+                group = c.Group
+            }));
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Add a new IPTV playlist from M3U URL
+    /// </summary>
+    public string AddIptvPlaylist(string name, string url)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(url))
+            {
+                return JsonSerializer.Serialize(new { success = false, error = "Name and URL are required" });
+            }
+
+            // Parse the M3U playlist
+            var task = _iptvService.ParsePlaylistAsync(name, url);
+            task.Wait();
+            var playlist = task.Result;
+
+            if (playlist == null)
+            {
+                return JsonSerializer.Serialize(new { success = false, error = "Failed to parse playlist. Check the URL." });
+            }
+
+            if (playlist.Channels.Count == 0)
+            {
+                return JsonSerializer.Serialize(new { success = false, error = "No channels found in playlist" });
+            }
+
+            // Save to config
+            if (!_configService.AddIptvPlaylist(playlist))
+            {
+                return JsonSerializer.Serialize(new { success = false, error = "A playlist with this name already exists" });
+            }
+
+            return JsonSerializer.Serialize(new
+            {
+                success = true,
+                playlist = new
+                {
+                    id = playlist.Id,
+                    name = playlist.Name,
+                    url = playlist.Url,
+                    lastUpdated = playlist.LastUpdated,
+                    channelCount = playlist.Channels.Count
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Remove an IPTV playlist
+    /// </summary>
+    public string RemoveIptvPlaylist(string playlistId)
+    {
+        try
+        {
+            var success = _configService.RemoveIptvPlaylist(playlistId);
+            return JsonSerializer.Serialize(new { success });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Refresh an IPTV playlist (re-fetch from URL)
+    /// </summary>
+    public string RefreshIptvPlaylist(string playlistId)
+    {
+        try
+        {
+            var playlist = _configService.GetIptvPlaylistById(playlistId);
+            if (playlist == null)
+            {
+                return JsonSerializer.Serialize(new { success = false, error = "Playlist not found" });
+            }
+
+            // Re-fetch and parse
+            var task = _iptvService.RefreshPlaylistAsync(playlist.Url);
+            task.Wait();
+            var channels = task.Result;
+
+            if (channels == null)
+            {
+                return JsonSerializer.Serialize(new { success = false, error = "Failed to refresh playlist" });
+            }
+
+            // Update playlist
+            playlist.Channels = channels;
+            playlist.LastUpdated = DateTime.UtcNow;
+            _configService.UpdateIptvPlaylist(playlist);
+
+            return JsonSerializer.Serialize(new
+            {
+                success = true,
+                channelCount = channels.Count
+            });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+        }
     }
 }

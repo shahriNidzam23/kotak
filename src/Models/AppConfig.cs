@@ -9,6 +9,9 @@ public class AppConfig
 
     [JsonPropertyName("controller")]
     public ControllerConfig Controller { get; set; } = new();
+
+    [JsonPropertyName("iptvPlaylists")]
+    public List<IptvPlaylist> IptvPlaylists { get; set; } = new();
 }
 
 public class AppEntry

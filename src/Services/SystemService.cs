@@ -175,4 +175,131 @@ public class SystemService
     // P/Invoke for sleep/hibernate
     [DllImport("powrprof.dll", SetLastError = true)]
     private static extern bool SetSuspendState(bool hibernate, bool forceCritical, bool disableWakeEvent);
+
+    // ============================
+    // Desktop & Browser
+    // ============================
+
+    /// <summary>
+    /// Show desktop by minimizing all windows (Win+D equivalent)
+    /// </summary>
+    public void ShowDesktop()
+    {
+        try
+        {
+            // Simulate Win+D keypress to toggle desktop view
+            keybd_event(VK_LWIN, 0, 0, 0);
+            keybd_event(VK_D, 0, 0, 0);
+            keybd_event(VK_D, 0, KEYEVENTF_KEYUP, 0);
+            keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"ShowDesktop error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Open Microsoft Edge browser
+    /// </summary>
+    public void OpenBrowser()
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "msedge",
+                UseShellExecute = true
+            };
+            Process.Start(startInfo);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"OpenBrowser (Edge) error: {ex.Message}");
+            // Fallback to default browser
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "https://www.bing.com",
+                    UseShellExecute = true
+                };
+                Process.Start(startInfo);
+            }
+            catch (Exception ex2)
+            {
+                Debug.WriteLine($"OpenBrowser (fallback) error: {ex2.Message}");
+            }
+        }
+    }
+
+    // P/Invoke for keyboard simulation (fallback for ShowDesktop)
+    [DllImport("user32.dll")]
+    private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+
+    private const byte VK_LWIN = 0x5B;
+    private const byte VK_D = 0x44;
+    private const uint KEYEVENTF_KEYUP = 0x0002;
+
+    // ============================
+    // Tailscale VPN
+    // ============================
+
+    /// <summary>
+    /// Start Tailscale VPN if not already running
+    /// </summary>
+    public (bool success, string message) StartTailscale()
+    {
+        try
+        {
+            // First check if Tailscale is already running
+            var statusInfo = new ProcessStartInfo
+            {
+                FileName = "tailscale",
+                Arguments = "status",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            using var statusProcess = Process.Start(statusInfo);
+            var output = statusProcess?.StandardOutput.ReadToEnd() ?? "";
+            statusProcess?.WaitForExit();
+
+            // Check if already connected (output contains @ which indicates logged in user)
+            if (output.Contains("@") && !output.Contains("Tailscale is stopped"))
+            {
+                return (true, "Tailscale is already running");
+            }
+
+            // Try to start Tailscale
+            var upInfo = new ProcessStartInfo
+            {
+                FileName = "tailscale",
+                Arguments = "up",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            using var upProcess = Process.Start(upInfo);
+            upProcess?.WaitForExit(10000); // 10 second timeout
+
+            if (upProcess?.ExitCode == 0)
+            {
+                return (true, "Tailscale started successfully");
+            }
+            else
+            {
+                return (false, "Failed to start Tailscale. Please check if it's installed and you're logged in.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"StartTailscale error: {ex.Message}");
+            return (false, "Tailscale not found. Please install Tailscale first.");
+        }
+    }
 }
