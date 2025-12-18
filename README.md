@@ -4,7 +4,6 @@ A fullscreen, TV-friendly launcher for Windows 10/11 Mini PCs. Built with WPF (.
 
 ## Features
 
-- **10-foot TV UI** - Large tiles, high contrast, readable from across the room
 - **Gamepad Support** - Full XInput controller navigation (Xbox, Fantech, etc.)
 - **App Launcher** - Launch web apps and native EXE applications
 - **Dynamic App Management** - Add/remove apps without rebuilding
@@ -150,15 +149,6 @@ Copy the entire `publish/` folder to your Mini PC. `config.json` and `thumbnails
 Manually edit `config.json` and add entries following the format above.
 
 ## Customization
-
-### Changing the Grid Layout
-Edit `src/WebUI/css/styles.css`:
-```css
-:root {
-    --grid-columns: 6;  /* Number of columns */
-    --tile-gap: 24px;   /* Space between tiles */
-}
-```
 
 ### Adding Custom Thumbnails
 Place PNG/JPG images in the `thumbnails/` folder and reference them in `config.json`.
