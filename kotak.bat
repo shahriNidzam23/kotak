@@ -138,7 +138,7 @@ call :do_publish
 if !ERRORLEVEL! NEQ 0 exit /b 1
 
 REM Get the version that was just set
-for /f "tokens=2 delims=<>" %%a in ('findstr /r "<Version>[0-9]*\.[0-9]*\.[0-9]*</Version>" src\Kotak.csproj') do set "RELEASE_VER=%%a"
+for /f "delims=" %%a in ('powershell -Command "([xml](Get-Content 'src\Kotak.csproj')).Project.PropertyGroup.Version | Where-Object { $_ -match '^\d+\.\d+\.\d+$' } | Select-Object -First 1"') do set "RELEASE_VER=%%a"
 
 echo.
 echo ========================================
