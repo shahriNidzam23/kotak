@@ -18,24 +18,9 @@ public class AppConfigService
         // Use AppContext.BaseDirectory for single-file app compatibility
         var basePath = AppContext.BaseDirectory;
 
-        // For development (running from bin/Debug or bin/Release), check if WebUI exists in parent
-        // This indicates we're running from bin folder and should use project root
-        var projectRoot = Path.GetFullPath(Path.Combine(basePath, ".."));
-        var isDevMode = Directory.Exists(Path.Combine(basePath, "WebUI")) == false
-                        && Directory.Exists(Path.Combine(projectRoot, "src", "WebUI"));
-
-        if (isDevMode)
-        {
-            // Development: config in project root (parent of bin)
-            _configPath = Path.Combine(projectRoot, "config.json");
-            _thumbnailsPath = Path.Combine(projectRoot, "thumbnails");
-        }
-        else
-        {
-            // Production/Published: config next to executable
-            _configPath = Path.Combine(basePath, "config.json");
-            _thumbnailsPath = Path.Combine(basePath, "thumbnails");
-        }
+        // Config and thumbnails are always next to the executable
+        _configPath = Path.Combine(basePath, "config.json");
+        _thumbnailsPath = Path.Combine(basePath, "thumbnails");
 
         _jsonOptions = new JsonSerializerOptions
         {
@@ -57,8 +42,29 @@ public class AppConfigService
                 var config = JsonSerializer.Deserialize<AppConfig>(json, _jsonOptions);
                 if (config != null)
                 {
+                    // Track if we need to update config for backward compatibility
+                    var needsSave = false;
+
                     // Ensure controller config exists
-                    config.Controller ??= new ControllerConfig();
+                    if (config.Controller == null)
+                    {
+                        config.Controller = new ControllerConfig();
+                        needsSave = true;
+                    }
+
+                    // Ensure IPTV playlists list exists (for configs from older versions)
+                    if (config.IptvPlaylists == null)
+                    {
+                        config.IptvPlaylists = [];
+                        needsSave = true;
+                    }
+
+                    // Save config if missing properties were added (backward compatibility)
+                    if (needsSave)
+                    {
+                        SaveConfig(config);
+                    }
+
                     return config;
                 }
             }
@@ -77,6 +83,8 @@ public class AppConfigService
                 {
                     // Add default controller config if missing
                     oldConfig.Controller ??= new ControllerConfig();
+                    // Ensure IPTV playlists list exists
+                    oldConfig.IptvPlaylists ??= [];
                     SaveConfig(oldConfig);
                     return oldConfig;
                 }
@@ -115,7 +123,8 @@ public class AppConfigService
                     Thumbnail = "thumbnails/disney.png"
                 }
             },
-            Controller = new ControllerConfig()
+            Controller = new ControllerConfig(),
+            IptvPlaylists = []
         };
 
         SaveConfig(config);
@@ -318,6 +327,37 @@ public class AppConfigService
         _config.IptvPlaylists[index] = updatedPlaylist;
         SaveConfig(_config);
         return true;
+    }
+
+    public bool MarkChannelFailed(string playlistId, string channelId)
+    {
+        var playlist = _config.IptvPlaylists.FirstOrDefault(p => p.Id == playlistId);
+        if (playlist == null) return false;
+
+        // Check if channel exists in playlist
+        var channelExists = playlist.Channels.Any(c => c.Id == channelId);
+        if (!channelExists) return false;
+
+        // Add to failed list if not already there
+        if (!playlist.FailedChannelIds.Contains(channelId))
+        {
+            playlist.FailedChannelIds.Add(channelId);
+            SaveConfig(_config);
+        }
+        return true;
+    }
+
+    public bool ClearChannelFailed(string playlistId, string channelId)
+    {
+        var playlist = _config.IptvPlaylists.FirstOrDefault(p => p.Id == playlistId);
+        if (playlist == null) return false;
+
+        if (playlist.FailedChannelIds.Remove(channelId))
+        {
+            SaveConfig(_config);
+            return true;
+        }
+        return false;
     }
 
     // ============================

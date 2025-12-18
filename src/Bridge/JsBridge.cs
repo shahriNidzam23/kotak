@@ -822,7 +822,8 @@ public class JsBridge
                 name = p.Name,
                 url = p.Url,
                 lastUpdated = p.LastUpdated,
-                channelCount = p.Channels.Count
+                channelCount = p.Channels.Count,
+                failedChannelIds = p.FailedChannelIds
             }));
         }
         catch (Exception ex)
@@ -844,13 +845,15 @@ public class JsBridge
                 return JsonSerializer.Serialize(new { error = "Playlist not found" });
             }
 
+            var failedIds = playlist.FailedChannelIds ?? new List<string>();
             return JsonSerializer.Serialize(playlist.Channels.Select(c => new
             {
                 id = c.Id,
                 name = c.Name,
                 url = c.Url,
                 logo = c.Logo,
-                group = c.Group
+                group = c.Group,
+                failed = failedIds.Contains(c.Id)
             }));
         }
         catch (Exception ex)
@@ -859,8 +862,12 @@ public class JsBridge
         }
     }
 
+    // Store for background IPTV add task results
+    private static string? _pendingIptvResult = null;
+    private static bool _iptvAddInProgress = false;
+
     /// <summary>
-    /// Add a new IPTV playlist from M3U URL
+    /// Add a new IPTV playlist from M3U URL (runs in background)
     /// </summary>
     public string AddIptvPlaylist(string name, string url)
     {
@@ -871,44 +878,99 @@ public class JsBridge
                 return JsonSerializer.Serialize(new { success = false, error = "Name and URL are required" });
             }
 
-            // Parse the M3U playlist
-            var task = _iptvService.ParsePlaylistAsync(name, url);
-            task.Wait();
-            var playlist = task.Result;
-
-            if (playlist == null)
+            // Check if already in progress
+            if (_iptvAddInProgress)
             {
-                return JsonSerializer.Serialize(new { success = false, error = "Failed to parse playlist. Check the URL." });
+                return JsonSerializer.Serialize(new { success = false, error = "Another playlist is being added. Please wait." });
             }
 
-            if (playlist.Channels.Count == 0)
-            {
-                return JsonSerializer.Serialize(new { success = false, error = "No channels found in playlist" });
-            }
-
-            // Save to config
-            if (!_configService.AddIptvPlaylist(playlist))
+            // Check for duplicate name before starting background task
+            if (_configService.GetIptvPlaylists().Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
             {
                 return JsonSerializer.Serialize(new { success = false, error = "A playlist with this name already exists" });
             }
 
-            return JsonSerializer.Serialize(new
+            // Start background task
+            _iptvAddInProgress = true;
+            _pendingIptvResult = null;
+
+            Task.Run(async () =>
             {
-                success = true,
-                playlist = new
+                try
                 {
-                    id = playlist.Id,
-                    name = playlist.Name,
-                    url = playlist.Url,
-                    lastUpdated = playlist.LastUpdated,
-                    channelCount = playlist.Channels.Count
+                    // Parse the M3U playlist
+                    var playlist = await _iptvService.ParsePlaylistAsync(name, url);
+
+                    if (playlist == null)
+                    {
+                        _pendingIptvResult = JsonSerializer.Serialize(new { success = false, error = "Failed to parse playlist. Check the URL.", name });
+                        return;
+                    }
+
+                    if (playlist.Channels.Count == 0)
+                    {
+                        _pendingIptvResult = JsonSerializer.Serialize(new { success = false, error = "No channels found in playlist", name });
+                        return;
+                    }
+
+                    // Save to config
+                    if (!_configService.AddIptvPlaylist(playlist))
+                    {
+                        _pendingIptvResult = JsonSerializer.Serialize(new { success = false, error = "A playlist with this name already exists", name });
+                        return;
+                    }
+
+                    _pendingIptvResult = JsonSerializer.Serialize(new
+                    {
+                        success = true,
+                        playlist = new
+                        {
+                            id = playlist.Id,
+                            name = playlist.Name,
+                            url = playlist.Url,
+                            lastUpdated = playlist.LastUpdated,
+                            channelCount = playlist.Channels.Count
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _pendingIptvResult = JsonSerializer.Serialize(new { success = false, error = ex.Message, name });
+                }
+                finally
+                {
+                    _iptvAddInProgress = false;
                 }
             });
+
+            // Return immediately indicating task started
+            return JsonSerializer.Serialize(new { started = true, name });
         }
         catch (Exception ex)
         {
+            _iptvAddInProgress = false;
             return JsonSerializer.Serialize(new { success = false, error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Check if IPTV playlist add operation is complete
+    /// </summary>
+    public string CheckIptvAddResult()
+    {
+        if (_iptvAddInProgress)
+        {
+            return JsonSerializer.Serialize(new { pending = true });
+        }
+
+        if (_pendingIptvResult != null)
+        {
+            var result = _pendingIptvResult;
+            _pendingIptvResult = null;
+            return result;
+        }
+
+        return JsonSerializer.Serialize(new { pending = false, noResult = true });
     }
 
     /// <summary>
@@ -927,8 +989,12 @@ public class JsBridge
         }
     }
 
+    // Store for background IPTV refresh task results
+    private static string? _pendingRefreshResult = null;
+    private static bool _iptvRefreshInProgress = false;
+
     /// <summary>
-    /// Refresh an IPTV playlist (re-fetch from URL)
+    /// Refresh an IPTV playlist (re-fetch from URL) - runs in background
     /// </summary>
     public string RefreshIptvPlaylist(string playlistId)
     {
@@ -940,26 +1006,112 @@ public class JsBridge
                 return JsonSerializer.Serialize(new { success = false, error = "Playlist not found" });
             }
 
-            // Re-fetch and parse
-            var task = _iptvService.RefreshPlaylistAsync(playlist.Url);
-            task.Wait();
-            var channels = task.Result;
-
-            if (channels == null)
+            // Check if already in progress
+            if (_iptvRefreshInProgress)
             {
-                return JsonSerializer.Serialize(new { success = false, error = "Failed to refresh playlist" });
+                return JsonSerializer.Serialize(new { success = false, error = "Another refresh is in progress. Please wait." });
             }
 
-            // Update playlist
-            playlist.Channels = channels;
-            playlist.LastUpdated = DateTime.UtcNow;
-            _configService.UpdateIptvPlaylist(playlist);
+            // Start background task
+            _iptvRefreshInProgress = true;
+            _pendingRefreshResult = null;
+            var playlistName = playlist.Name;
+            var playlistUrl = playlist.Url;
 
-            return JsonSerializer.Serialize(new
+            Task.Run(async () =>
             {
-                success = true,
-                channelCount = channels.Count
+                try
+                {
+                    // Re-fetch and parse
+                    var channels = await _iptvService.RefreshPlaylistAsync(playlistUrl);
+
+                    if (channels == null)
+                    {
+                        _pendingRefreshResult = JsonSerializer.Serialize(new { success = false, error = "Failed to refresh playlist", name = playlistName });
+                        return;
+                    }
+
+                    // Update playlist
+                    var currentPlaylist = _configService.GetIptvPlaylistById(playlistId);
+                    if (currentPlaylist != null)
+                    {
+                        currentPlaylist.Channels = channels;
+                        currentPlaylist.LastUpdated = DateTime.UtcNow;
+                        _configService.UpdateIptvPlaylist(currentPlaylist);
+                    }
+
+                    _pendingRefreshResult = JsonSerializer.Serialize(new
+                    {
+                        success = true,
+                        channelCount = channels.Count,
+                        name = playlistName
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _pendingRefreshResult = JsonSerializer.Serialize(new { success = false, error = ex.Message, name = playlistName });
+                }
+                finally
+                {
+                    _iptvRefreshInProgress = false;
+                }
             });
+
+            // Return immediately indicating task started
+            return JsonSerializer.Serialize(new { started = true, name = playlistName });
+        }
+        catch (Exception ex)
+        {
+            _iptvRefreshInProgress = false;
+            return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Check if IPTV playlist refresh operation is complete
+    /// </summary>
+    public string CheckIptvRefreshResult()
+    {
+        if (_iptvRefreshInProgress)
+        {
+            return JsonSerializer.Serialize(new { pending = true });
+        }
+
+        if (_pendingRefreshResult != null)
+        {
+            var result = _pendingRefreshResult;
+            _pendingRefreshResult = null;
+            return result;
+        }
+
+        return JsonSerializer.Serialize(new { pending = false, noResult = true });
+    }
+
+    /// <summary>
+    /// Mark a channel as failed (not working)
+    /// </summary>
+    public string MarkChannelFailed(string playlistId, string channelId)
+    {
+        try
+        {
+            var success = _configService.MarkChannelFailed(playlistId, channelId);
+            return JsonSerializer.Serialize(new { success });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Clear the failed status of a channel
+    /// </summary>
+    public string ClearChannelFailed(string playlistId, string channelId)
+    {
+        try
+        {
+            var success = _configService.ClearChannelFailed(playlistId, channelId);
+            return JsonSerializer.Serialize(new { success });
         }
         catch (Exception ex)
         {

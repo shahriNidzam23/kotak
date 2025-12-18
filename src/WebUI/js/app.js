@@ -402,17 +402,13 @@ async function connectToWifi(password) {
 // ============================
 
 // ============================
-// Volume & Brightness Controls
+// Brightness Controls
 // ============================
 
-async function loadVolumeAndBrightness() {
+async function loadBrightness() {
     if (!bridge) return;
 
     try {
-        // Get current volume
-        const volume = bridge.GetVolume();
-        updateVolumeDisplay(volume);
-
         // Get brightness (may not be supported on desktops)
         const brightnessSupported = bridge.IsBrightnessSupported();
         const brightnessSlider = document.querySelector('.settings-slider-item:has(#brightness-value)');
@@ -426,7 +422,7 @@ async function loadVolumeAndBrightness() {
             if (brightnessSlider) brightnessSlider.style.display = 'none';
         }
     } catch (e) {
-        console.error('Error loading volume/brightness:', e);
+        console.error('Error loading brightness:', e);
     }
 }
 
@@ -609,29 +605,10 @@ function cancelUpdateDownload() {
     }
 }
 
-function updateVolumeDisplay(level) {
-    level = Math.max(0, Math.min(100, level));
-    document.getElementById('volume-value').textContent = `${level}%`;
-    document.getElementById('volume-fill').style.width = `${level}%`;
-}
-
 function updateBrightnessDisplay(level) {
     level = Math.max(0, Math.min(100, level));
     document.getElementById('brightness-value').textContent = `${level}%`;
     document.getElementById('brightness-fill').style.width = `${level}%`;
-}
-
-function adjustVolume(delta) {
-    if (!bridge) return;
-
-    try {
-        const current = bridge.GetVolume();
-        const newLevel = Math.max(0, Math.min(100, current + delta));
-        bridge.SetVolume(newLevel);
-        updateVolumeDisplay(newLevel);
-    } catch (e) {
-        console.error('Error adjusting volume:', e);
-    }
 }
 
 function adjustBrightness(delta) {
@@ -1034,10 +1011,10 @@ function activateFocused() {
         case 'add-iptv-playlist':
             showAddIptvPlaylistDialog();
             break;
-        case 'confirm-add-iptv-playlist':
+        case 'confirm-add-iptv':
             confirmAddIptvPlaylist();
             break;
-        case 'cancel-add-iptv-playlist':
+        case 'cancel-add-iptv':
             hideAllDialogs();
             updateFocusableElements();
             break;
@@ -1185,12 +1162,6 @@ function handleMouseClick(e) {
         case 'cancel-mapping':
             cancelControllerMapping();
             break;
-        case 'volume-up':
-            adjustVolume(10);
-            break;
-        case 'volume-down':
-            adjustVolume(-10);
-            break;
         case 'brightness-up':
             adjustBrightness(10);
             break;
@@ -1240,10 +1211,10 @@ function handleMouseClick(e) {
         case 'add-iptv-playlist':
             showAddIptvPlaylistDialog();
             break;
-        case 'confirm-add-iptv-playlist':
+        case 'confirm-add-iptv':
             confirmAddIptvPlaylist();
             break;
-        case 'cancel-add-iptv-playlist':
+        case 'cancel-add-iptv':
             hideAllDialogs();
             updateFocusableElements();
             break;
@@ -1440,7 +1411,12 @@ function handleGamepadInput(data) {
                 goBack();
                 break;
             case 'Y':
-                showAddAppDialog();
+                // Show add dialog based on current tab
+                if (state.currentTab === 'iptv' && state.iptvView === 'playlists') {
+                    showAddIptvPlaylistDialog();
+                } else if (state.currentTab === 'apps') {
+                    showAddAppDialog();
+                }
                 break;
             case 'X':
                 // Show context menu for focused app tile
@@ -1685,7 +1661,7 @@ function switchTab(tabName) {
 
     // Load data for specific tabs
     if (tabName === 'settings') {
-        loadVolumeAndBrightness();
+        loadBrightness();
         updateWifiStatus();
         loadVersion();
     } else if (tabName === 'iptv') {
@@ -2197,42 +2173,34 @@ function renderIptvPlaylists() {
         });
     }
 
-    // Add "Add Playlist" button
-    const addBtn = document.createElement('button');
-    addBtn.className = 'iptv-add-btn focusable';
-    addBtn.dataset.action = 'add-iptv-playlist';
-    addBtn.tabIndex = 0;
-    addBtn.innerHTML = `
-        <span class="add-icon">+</span>
-        <span>Add Playlist</span>
-    `;
-    listEl.appendChild(addBtn);
-
     updateFocusableElements();
 }
 
 function showAddIptvPlaylistDialog() {
-    document.getElementById('iptv-playlist-name-input').value = '';
-    document.getElementById('iptv-playlist-url-input').value = '';
-    document.getElementById('add-iptv-playlist-dialog').classList.remove('hidden');
+    document.getElementById('iptv-playlist-name').value = '';
+    document.getElementById('iptv-playlist-url').value = '';
+    document.getElementById('add-iptv-dialog').classList.remove('hidden');
     updateFocusableElements();
 
     setTimeout(() => {
-        document.getElementById('iptv-playlist-name-input').focus();
+        document.getElementById('iptv-playlist-name').focus();
     }, 100);
 }
 
+// Track IPTV add polling interval
+let iptvAddPollInterval = null;
+
 async function confirmAddIptvPlaylist() {
-    const name = document.getElementById('iptv-playlist-name-input').value.trim();
-    const url = document.getElementById('iptv-playlist-url-input').value.trim();
+    const name = document.getElementById('iptv-playlist-name').value.trim();
+    const url = document.getElementById('iptv-playlist-url').value.trim();
 
     if (!name) {
-        document.getElementById('iptv-playlist-name-input').focus();
+        document.getElementById('iptv-playlist-name').focus();
         return;
     }
 
     if (!url) {
-        document.getElementById('iptv-playlist-url-input').focus();
+        document.getElementById('iptv-playlist-url').focus();
         return;
     }
 
@@ -2242,33 +2210,75 @@ async function confirmAddIptvPlaylist() {
         return;
     }
 
-    // Show loading state
-    const dialog = document.getElementById('add-iptv-playlist-dialog');
-    const addBtn = dialog.querySelector('[data-action="confirm-add-iptv-playlist"]');
-    const originalText = addBtn.textContent;
-    addBtn.textContent = 'Adding...';
-    addBtn.disabled = true;
-
     try {
         if (bridge) {
             const resultJson = bridge.AddIptvPlaylist(name, url);
             const result = JSON.parse(resultJson);
 
-            if (result.success) {
+            if (result.started) {
+                // Task started in background, close dialog and notify user
+                hideAllDialogs();
+                showToast(`Adding "${name}"... You'll be notified when done.`);
+
+                // Start polling for result
+                startIptvAddPolling();
+            } else if (result.success) {
+                // Immediate success (shouldn't happen with new implementation)
                 hideAllDialogs();
                 loadIptvPlaylists();
                 showToast(`Added playlist: ${name}`);
             } else {
+                // Immediate error (validation failed)
                 showIptvError(result.error || 'Failed to add playlist');
             }
         }
     } catch (error) {
         console.error('Failed to add IPTV playlist:', error);
         showIptvError('Failed to add playlist');
-    } finally {
-        addBtn.textContent = originalText;
-        addBtn.disabled = false;
     }
+}
+
+function startIptvAddPolling() {
+    // Clear any existing polling
+    if (iptvAddPollInterval) {
+        clearInterval(iptvAddPollInterval);
+    }
+
+    // Poll every 500ms for result
+    iptvAddPollInterval = setInterval(() => {
+        if (bridge) {
+            try {
+                const resultJson = bridge.CheckIptvAddResult();
+                const result = JSON.parse(resultJson);
+
+                if (result.pending) {
+                    // Still processing, continue polling
+                    return;
+                }
+
+                // Stop polling
+                clearInterval(iptvAddPollInterval);
+                iptvAddPollInterval = null;
+
+                if (result.noResult) {
+                    // No result available (shouldn't happen normally)
+                    return;
+                }
+
+                // Got a result
+                if (result.success) {
+                    loadIptvPlaylists();
+                    showToast(`Playlist "${result.playlist.name}" added with ${result.playlist.channelCount} channels`);
+                } else {
+                    showToast(`Failed to add playlist: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error checking IPTV add result:', error);
+                clearInterval(iptvAddPollInterval);
+                iptvAddPollInterval = null;
+            }
+        }
+    }, 500);
 }
 
 function removeIptvPlaylist(playlistId) {
@@ -2294,24 +2304,63 @@ function removeIptvPlaylist(playlistId) {
     );
 }
 
-async function refreshIptvPlaylist(playlistId) {
-    showToast('Refreshing playlist...');
+// Track IPTV refresh polling interval
+let iptvRefreshPollInterval = null;
+let pendingRefreshPlaylistId = null;
+let pendingRefreshOpenAfter = false;
 
+async function refreshIptvPlaylist(playlistId, openAfterRefresh = false) {
     try {
         if (bridge) {
             const resultJson = bridge.RefreshIptvPlaylist(playlistId);
             const result = JSON.parse(resultJson);
 
-            if (result.success) {
-                loadIptvPlaylists();
-                showToast(`Updated: ${result.channelCount} channels`);
-            } else {
-                showIptvError(result.error || 'Failed to refresh playlist');
+            if (result.started) {
+                // Task started in background, notify user
+                showToast(`Refreshing "${result.name}"...`);
+                pendingRefreshPlaylistId = playlistId;
+                pendingRefreshOpenAfter = openAfterRefresh;
+
+                // Start polling for result
+                if (iptvRefreshPollInterval) {
+                    clearInterval(iptvRefreshPollInterval);
+                }
+
+                iptvRefreshPollInterval = setInterval(() => {
+                    const checkJson = bridge.CheckIptvRefreshResult();
+                    const checkResult = JSON.parse(checkJson);
+
+                    if (!checkResult.pending) {
+                        clearInterval(iptvRefreshPollInterval);
+                        iptvRefreshPollInterval = null;
+
+                        if (checkResult.noResult) {
+                            return;
+                        }
+
+                        if (checkResult.success) {
+                            loadIptvPlaylists();
+                            showToast(`"${checkResult.name}" updated: ${checkResult.channelCount} channels`);
+
+                            // If requested, open the playlist after refresh
+                            if (pendingRefreshOpenAfter && pendingRefreshPlaylistId) {
+                                openIptvPlaylist(pendingRefreshPlaylistId);
+                            }
+                        } else {
+                            showToast(`Failed to refresh "${checkResult.name}": ${checkResult.error}`);
+                        }
+
+                        pendingRefreshPlaylistId = null;
+                        pendingRefreshOpenAfter = false;
+                    }
+                }, 500);
+            } else if (result.error) {
+                showToast(result.error);
             }
         }
     } catch (error) {
         console.error('Failed to refresh IPTV playlist:', error);
-        showIptvError('Failed to refresh playlist');
+        showToast('Failed to refresh playlist');
     }
 }
 
@@ -2321,13 +2370,31 @@ function openIptvPlaylist(playlistId) {
 
     state.currentPlaylist = playlist;
 
-    // If no channels, try to fetch them
-    if (!playlist.channels || playlist.channels.length === 0) {
-        refreshIptvPlaylist(playlistId);
-        return;
-    }
+    // Fetch channels from backend
+    if (bridge) {
+        try {
+            const channelsJson = bridge.GetPlaylistChannels(playlistId);
+            const channels = JSON.parse(channelsJson);
 
-    renderIptvChannels(playlist);
+            if (channels.error) {
+                showIptvError(channels.error);
+                return;
+            }
+
+            // Store channels in current playlist
+            state.currentPlaylist.channels = channels;
+
+            if (!channels || channels.length === 0) {
+                showIptvError('No channels found in this playlist');
+                return;
+            }
+
+            renderIptvChannels(state.currentPlaylist);
+        } catch (error) {
+            console.error('Failed to load channels:', error);
+            showIptvError('Failed to load channels');
+        }
+    }
 }
 
 function renderIptvChannels(playlist) {
@@ -2360,7 +2427,8 @@ function renderIptvChannels(playlist) {
 
     playlist.channels.forEach(channel => {
         const tile = document.createElement('div');
-        tile.className = 'iptv-channel-tile focusable';
+        const isFailed = channel.failed === true;
+        tile.className = `iptv-channel-tile focusable${isFailed ? ' channel-failed' : ''}`;
         tile.dataset.action = 'play-iptv-channel';
         tile.dataset.channelId = channel.id;
         tile.tabIndex = 0;
@@ -2378,6 +2446,7 @@ function renderIptvChannels(playlist) {
             <div class="channel-info">
                 <div class="channel-name">${escapeHtml(channel.name)}</div>
                 ${channel.group ? `<div class="channel-group">${escapeHtml(channel.group)}</div>` : ''}
+                ${isFailed ? '<div class="channel-failed-badge">Not Working</div>' : ''}
             </div>
         `;
 
@@ -2428,7 +2497,10 @@ function playIptvChannel(channelId) {
     videoEl.load();
     videoEl.play().catch(error => {
         console.error('Failed to play stream:', error);
-        showIptvError(`Failed to play "${channel.name}". The stream may be unavailable or in an unsupported format.`);
+        // Mark channel as failed and go back to channels
+        markChannelAsFailed(state.currentPlaylist?.id, channel.id);
+        iptvBackToChannels();
+        showToast(`Failed to play "${channel.name}"`);
     });
 
     // Setup video event handlers
@@ -2451,7 +2523,12 @@ function setupVideoEventHandlers() {
     videoEl.onerror = function(e) {
         console.error('Video error:', e);
         const channelName = state.currentChannel ? state.currentChannel.name : 'channel';
-        showIptvError(`Failed to play "${channelName}". The stream may be unavailable or in an unsupported format.`);
+        // Mark channel as failed and go back to channels
+        if (state.currentPlaylist && state.currentChannel) {
+            markChannelAsFailed(state.currentPlaylist.id, state.currentChannel.id);
+        }
+        iptvBackToChannels();
+        showToast(`Failed to play "${channelName}"`);
     };
 
     videoEl.onended = function() {
@@ -2519,4 +2596,21 @@ function showIptvError(message) {
 function closeIptvErrorDialog() {
     document.getElementById('iptv-error-dialog').classList.add('hidden');
     updateFocusableElements();
+}
+
+function markChannelAsFailed(playlistId, channelId) {
+    if (!playlistId || !channelId || !bridge) return;
+
+    try {
+        bridge.MarkChannelFailed(playlistId, channelId);
+        // Update local state to reflect the failed status
+        if (state.currentPlaylist && state.currentPlaylist.id === playlistId) {
+            const channel = state.currentPlaylist.channels.find(c => c.id === channelId);
+            if (channel) {
+                channel.failed = true;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to mark channel as failed:', error);
+    }
 }

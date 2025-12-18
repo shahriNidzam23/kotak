@@ -2100,14 +2100,26 @@ body.cursor-hidden * {
     font-size: var(--font-size-lg);
 }
 
+/* IPTV Channel Grid Container */
+.iptv-channel-grid-container {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
 /* IPTV Channel Grid */
 .iptv-channel-grid {
     display: grid;
     grid-template-columns: repeat(var(--grid-columns), 1fr);
+    grid-auto-rows: min-content;
     gap: var(--tile-gap);
     padding: var(--spacing-lg) 0;
     overflow-y: auto;
     flex: 1;
+    min-height: 0;
+    align-content: start;
 }
 
 .iptv-channel-grid::-webkit-scrollbar {
@@ -2139,6 +2151,7 @@ body.cursor-hidden * {
     flex-direction: column;
     position: relative;
     box-shadow: var(--shadow-sm);
+    height: fit-content;
 }
 
 .iptv-channel-tile:hover {
@@ -2184,6 +2197,26 @@ body.cursor-hidden * {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: center;
+}
+
+/* Failed Channel Styling */
+.iptv-channel-tile.channel-failed {
+    opacity: 0.5;
+    filter: grayscale(80%);
+}
+
+.iptv-channel-tile.channel-failed:hover {
+    opacity: 0.7;
+}
+
+.iptv-channel-tile .channel-failed-badge {
+    font-size: var(--font-size-xs);
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 4px;
     text-align: center;
 }
 
@@ -2291,11 +2324,11 @@ body.cursor-hidden * {
 }
 
 /* IPTV Dialog Inputs */
-#add-iptv-playlist-dialog .form-group {
+#add-iptv-dialog .form-group {
     margin-bottom: var(--spacing-md);
 }
 
-#add-iptv-playlist-dialog input {
+#add-iptv-dialog input {
     width: 100%;
     padding: var(--spacing-md);
     font-size: var(--font-size-md);
@@ -2305,12 +2338,12 @@ body.cursor-hidden * {
     color: var(--text-primary);
 }
 
-#add-iptv-playlist-dialog input:focus {
+#add-iptv-dialog input:focus {
     outline: none;
     border-color: var(--accent);
 }
 
-#add-iptv-playlist-dialog input::placeholder {
+#add-iptv-dialog input::placeholder {
     color: var(--text-secondary);
     opacity: 0.7;
 }

@@ -23,7 +23,7 @@ packages/
 WebView2Data/
 
 # App data and config (generated at runtime)
-config.json
+publish/config.json
 thumbnails/
 
 # Windows

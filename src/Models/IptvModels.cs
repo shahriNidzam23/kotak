@@ -18,6 +18,9 @@ public class IptvPlaylist
 
     [JsonPropertyName("channels")]
     public List<IptvChannel> Channels { get; set; } = new();
+
+    [JsonPropertyName("failedChannelIds")]
+    public List<string> FailedChannelIds { get; set; } = new();
 }
 
 public class IptvChannel
