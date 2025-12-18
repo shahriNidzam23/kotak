@@ -35,6 +35,10 @@
                 <span class="tab-icon">&#128187;</span>
                 <span class="tab-label">Apps</span>
             </button>
+            <button class="tab-btn focusable" data-action="switch-tab" data-tab="iptv">
+                <span class="tab-icon">&#128250;</span>
+                <span class="tab-label">IPTV</span>
+            </button>
             <button class="tab-btn focusable" data-action="switch-tab" data-tab="utilities">
                 <span class="tab-icon">&#128295;</span>
                 <span class="tab-label">Utilities</span>
@@ -54,9 +58,65 @@
             </div>
         </main>
 
+        <!-- Tab Content: IPTV -->
+        <main id="tab-iptv" class="tab-content">
+            <!-- Playlist List View -->
+            <div id="iptv-playlists-view" class="iptv-view">
+                <div id="iptv-playlist-list" class="iptv-playlist-list">
+                    <!-- Playlists will be dynamically inserted here -->
+                </div>
+                <button class="iptv-add-btn focusable" data-action="add-iptv-playlist">
+                    <span class="icon">+</span>
+                    <span>Add Playlist</span>
+                </button>
+            </div>
+
+            <!-- Channel Grid View (hidden initially) -->
+            <div id="iptv-channels-view" class="iptv-view" style="display: none;">
+                <div class="iptv-header">
+                    <button class="iptv-back-btn focusable" data-action="iptv-back-to-playlists">
+                        <span>&#8592;</span>
+                        <span>Back</span>
+                    </button>
+                    <h2 id="iptv-playlist-title">Playlist Name</h2>
+                    <span id="iptv-channel-count" class="iptv-channel-count">0 channels</span>
+                </div>
+                <div class="iptv-channel-grid-container">
+                    <div id="iptv-channel-grid" class="iptv-channel-grid">
+                        <!-- Channels will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Player View (hidden initially) -->
+            <div id="iptv-player-view" class="iptv-player-view" style="display: none;">
+                <video id="iptv-video" autoplay controls></video>
+                <div class="iptv-player-overlay" id="iptv-player-overlay">
+                    <div class="iptv-player-info">
+                        <h2 id="iptv-current-channel">Channel Name</h2>
+                        <p id="iptv-current-group">Category</p>
+                    </div>
+                    <button class="iptv-back-btn focusable" data-action="iptv-back-to-channels">
+                        <span>&#8592;</span>
+                        <span>Back to Channels</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+
         <!-- Tab Content: Utilities -->
         <main id="tab-utilities" class="tab-content">
             <div class="utilities-grid">
+                <button class="utility-tile focusable" data-action="show-desktop">
+                    <span class="utility-icon">&#128421;</span>
+                    <span class="utility-name">Desktop</span>
+                    <span class="utility-desc">Minimize all and show desktop</span>
+                </button>
+                <button class="utility-tile focusable" data-action="open-browser">
+                    <span class="utility-icon">&#127760;</span>
+                    <span class="utility-name">Browser</span>
+                    <span class="utility-desc">Open Microsoft Edge</span>
+                </button>
                 <button class="utility-tile focusable" data-action="open-explorer">
                     <span class="utility-icon">&#128193;</span>
                     <span class="utility-name">File Explorer</span>
@@ -66,6 +126,11 @@
                     <span class="utility-icon">&#128225;</span>
                     <span class="utility-name">Simple Transfer</span>
                     <span class="utility-desc">Receive files via network</span>
+                </button>
+                <button class="utility-tile focusable" data-action="start-tailscale">
+                    <span class="utility-icon">&#128279;</span>
+                    <span class="utility-name">Tailscale</span>
+                    <span class="utility-desc">Turn on Tailscale VPN</span>
                 </button>
             </div>
         </main>
@@ -80,22 +145,6 @@
                         <span class="wifi-ssid-label" id="settings-wifi-label">Not connected</span>
                     </div>
                 </button>
-                <div class="settings-divider"></div>
-                <!-- Volume Control -->
-                <div class="settings-slider-item">
-                    <div class="slider-header">
-                        <span class="icon">&#128266;</span>
-                        <span>Volume</span>
-                        <span class="slider-value" id="volume-value">50%</span>
-                    </div>
-                    <div class="slider-controls">
-                        <button class="slider-btn focusable" data-action="volume-down">&#8722;</button>
-                        <div class="slider-track">
-                            <div class="slider-fill" id="volume-fill" style="width: 50%"></div>
-                        </div>
-                        <button class="slider-btn focusable" data-action="volume-up">+</button>
-                    </div>
-                </div>
                 <!-- Brightness Control -->
                 <div class="settings-slider-item">
                     <div class="slider-header">
@@ -119,6 +168,10 @@
                 <button class="settings-item focusable" data-action="controller-settings">
                     <span class="icon">&#127918;</span>
                     <span>Controller Settings</span>
+                </button>
+                <button class="settings-item focusable" data-action="refresh-config">
+                    <span class="icon">&#128260;</span>
+                    <span>Refresh Config</span>
                 </button>
                 <div class="settings-divider"></div>
                 <button class="settings-item focusable" data-action="sleep">
@@ -148,6 +201,7 @@
                         <span class="icon">&#128269;</span>
                         <span>Check for Updates</span>
                     </button>
+                    <!-- Update Available -->
                     <div class="update-available" id="update-available" style="display: none;">
                         <div class="update-info">
                             <span class="update-badge">New version available!</span>
@@ -155,9 +209,26 @@
                         </div>
                         <button class="settings-item focusable update-download-btn" data-action="download-update">
                             <span class="icon">&#128229;</span>
-                            <span>Download Update</span>
+                            <span>Download &amp; Install Update</span>
                         </button>
                     </div>
+                    <!-- Download Progress -->
+                    <div class="update-progress" id="update-progress" style="display: none;">
+                        <div class="update-progress-header">
+                            <span class="update-phase" id="update-phase">Downloading</span>
+                            <span class="update-progress-percent" id="update-progress-percent">0%</span>
+                        </div>
+                        <div class="update-progress-bar">
+                            <div class="update-progress-fill" id="update-progress-fill"></div>
+                        </div>
+                        <div class="update-progress-text" id="update-progress-text">Starting...</div>
+                        <button class="settings-item focusable update-cancel-btn" data-action="cancel-update">
+                            <span class="icon">&#10006;</span>
+                            <span>Cancel</span>
+                        </button>
+                    </div>
+                    <!-- Error Message -->
+                    <div class="update-error-message" id="update-error-message" style="display: none;"></div>
                 </div>
                 <div class="settings-divider"></div>
                 <div class="settings-version">
@@ -175,6 +246,7 @@
                 <span class="hint"><kbd>Y</kbd> Add App</span>
                 <span class="hint"><kbd>LB</kbd> <span class="tab-arrow">&#9664;</span> Tab <span class="tab-arrow">&#9654;</span> <kbd>RB</kbd></span>
             </div>
+            <div class="footer-version" id="footer-version">v1.0.0</div>
         </footer>
     </div>
 
@@ -372,6 +444,41 @@
             <span class="icon">&#128465;</span>
             <span>Remove App</span>
         </button>
+    </div>
+
+    <!-- Add IPTV Playlist Dialog -->
+    <div id="add-iptv-dialog" class="dialog hidden">
+        <div class="dialog-content">
+            <h3>Add IPTV Playlist</h3>
+            <div class="form-group">
+                <label for="iptv-playlist-name">Playlist Name</label>
+                <input type="text" id="iptv-playlist-name" class="focusable" placeholder="My IPTV">
+            </div>
+            <div class="form-group">
+                <label for="iptv-playlist-url">M3U/M3U8 URL</label>
+                <input type="text" id="iptv-playlist-url" class="focusable" placeholder="http://example.com/playlist.m3u">
+            </div>
+            <div id="iptv-add-error" class="form-error" style="display: none;"></div>
+            <div id="iptv-add-loading" class="form-loading" style="display: none;">
+                <span class="loading-spinner"></span>
+                <span>Loading playlist...</span>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn primary focusable" data-action="confirm-add-iptv">Add</button>
+                <button class="btn focusable" data-action="cancel-add-iptv">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- IPTV Error Dialog -->
+    <div id="iptv-error-dialog" class="dialog hidden">
+        <div class="dialog-content">
+            <h3>Playback Error</h3>
+            <p id="iptv-error-message">Unable to play this channel. The stream may be unavailable.</p>
+            <div class="dialog-actions">
+                <button class="btn focusable" data-action="close-iptv-error">OK</button>
+            </div>
+        </div>
     </div>
 
     <script src="js/app.js"></script>
