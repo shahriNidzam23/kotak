@@ -9,6 +9,11 @@
     <RootNamespace>Kotak</RootNamespace>
     <AssemblyName>Kotak</AssemblyName>
 
+    <!-- Version (updated by kotak.bat publish) -->
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0</FileVersion>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+
     <!-- Run as Administrator -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
 

@@ -20,6 +20,7 @@ public class JsBridge
     private readonly FileExplorerService _fileExplorerService;
     private readonly ProcessManagerService _processManagerService;
     private readonly SimpleTransferService _transferService;
+    private readonly UpdateService _updateService;
 
     public JsBridge(MainWindow mainWindow, AppConfigService configService)
     {
@@ -31,6 +32,7 @@ public class JsBridge
         _fileExplorerService = new FileExplorerService();
         _processManagerService = new ProcessManagerService();
         _transferService = new SimpleTransferService();
+        _updateService = new UpdateService();
 
         // Wire up transfer events to send to WebView
         _transferService.OnLogEntry += (entry) =>
@@ -340,6 +342,15 @@ public class JsBridge
         return _configService.ThumbnailsPath;
     }
 
+    /// <summary>
+    /// Get the application version
+    /// </summary>
+    public string GetVersion()
+    {
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        return version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "1.0.0";
+    }
+
     // ============================
     // Controller Configuration
     // ============================
@@ -577,5 +588,48 @@ public class JsBridge
         });
 
         return result;
+    }
+
+    // ============================
+    // Update Management
+    // ============================
+
+    /// <summary>
+    /// Check for updates from GitHub releases
+    /// </summary>
+    public string CheckForUpdates()
+    {
+        try
+        {
+            var task = _updateService.CheckForUpdatesAsync();
+            task.Wait();
+            var result = task.Result;
+            return JsonSerializer.Serialize(new
+            {
+                hasUpdate = result.HasUpdate,
+                currentVersion = result.CurrentVersion,
+                latestVersion = result.LatestVersion,
+                releaseNotes = result.ReleaseNotes,
+                releaseName = result.ReleaseName,
+                releaseUrl = result.ReleaseUrl,
+                downloadUrl = result.DownloadUrl,
+                fileName = result.FileName,
+                fileSize = result.FileSize,
+                publishedAt = result.PublishedAt,
+                error = result.Error
+            });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { hasUpdate = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Open the GitHub releases page in browser
+    /// </summary>
+    public void OpenReleasesPage()
+    {
+        _updateService.OpenReleasesPage();
     }
 }

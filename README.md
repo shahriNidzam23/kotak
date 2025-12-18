@@ -1,6 +1,6 @@
 # KOTAK
 
-A fullscreen, TV-friendly launcher for Windows 10/11 Mini PCs. Built with WPF (.NET 8) and WebView2.
+A fullscreen, TV-friendly launcher for Windows 10/11 Mini PCs. Built with WPF (.NET 8) and WebView2. Coded by Claude Code.
 
 ## Features
 
