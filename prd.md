@@ -5,7 +5,7 @@
 **Product Name:** KOTAK
 **Platform:** Windows 10/11 (Mini PC connected to TV)
 **Target Users:** Anyone using a mini PC + TV, including remote or gamepad control
-**Current Version:** 1.1.0
+**Current Version:** 1.1.1
 
 ### Purpose
 
@@ -53,9 +53,8 @@ Create a **fullscreen, TV-friendly launcher** built with **WPF (.NET 8) and WebV
 | **Add Apps Dynamically** | Done   | Browse any folder, select any EXE, automatically add it to grid.                                |
 | **Shutdown/Restart/Sleep** | Done | Access to turn off, restart, or sleep the mini PC from Settings tab.                           |
 | **Wi-Fi Connectivity**   | Done   | Scan for networks and connect to Wi-Fi directly from launcher.                                  |
-| **Gamepad Support**      | Done   | Full navigation via XInput-compatible controllers. Remappable buttons.                          |
+| **Gamepad Support**      | Done   | Full navigation via XInput-compatible controllers. Remappable buttons. Web app scroll/click. Right stick mouse control.    |
 | **Volume Control**       | Done   | Adjust system volume from Settings tab.                                                         |
-| **Brightness Control**   | Done   | Adjust screen brightness (laptops/supported displays).                                          |
 | **Controller Remapping** | Done   | Customize gamepad button mappings via Settings.                                                 |
 | **Update Checker**       | Done   | Check for updates from GitHub releases.                                                         |
 | **Version Display**      | Done   | Show current version in Settings tab.                                                           |
@@ -153,12 +152,14 @@ Example:
 
 | Gamepad | Keyboard | Action |
 |---------|----------|--------|
-| D-pad / Left Stick | Arrow Keys | Navigate |
-| A | Enter | Select |
-| B | Escape | Back |
-| X | Delete | Remove App |
+| D-pad / Left Stick | Arrow Keys | Navigate / Scroll (in web apps) |
+| Right Stick | - | Mouse cursor control |
+| A | Enter | Select / Mouse click (when using right stick) |
+| B | Escape | Back / Browser Back (in web apps) |
+| X | Delete / X | Remove App / Close web app |
 | Y | Y | Add App / Add IPTV Playlist |
 | LB / RB | - | Switch tabs |
+| LB + RB + Start | Ctrl+Esc | Close web app |
 | Start | Space | Settings Menu |
 
 ---
@@ -173,7 +174,7 @@ Example:
   * Browsing directories and adding apps
   * Shutdown/restart/sleep functionality
   * Wi-Fi management (scan, connect)
-  * Volume and brightness control
+  * Volume control
   * Gamepad polling and button remapping
   * Update checking via GitHub API
   * IPTV playlist parsing and channel management
@@ -251,7 +252,7 @@ kotak.bat clean     # Clean build outputs
 - [x] Shutdown/Restart/Sleep buttons
 - [x] Wi-Fi connectivity interface
 - [x] Gamepad navigation support with remapping
-- [x] Volume and brightness controls
+- [x] Volume control
 - [x] File explorer and transfer utilities
 - [x] Update checker from GitHub releases
 - [x] Version display in Settings

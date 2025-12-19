@@ -117,9 +117,9 @@ public class AppConfigService
                 },
                 new AppEntry
                 {
-                    Name = "Disney+",
+                    Name = "RTM Klik",
                     Type = "web",
-                    Url = "https://www.disneyplus.com",
+                    Url = "https://rtmklik.rtm.gov.my",
                     Thumbnail = "thumbnails/disney.png"
                 }
             },

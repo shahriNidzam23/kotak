@@ -151,9 +151,21 @@ public class RawInputGamepadService : IDisposable
         public INPUTUNION u;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MOUSEINPUT
+    {
+        public int dx;
+        public int dy;
+        public uint mouseData;
+        public uint dwFlags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
     [StructLayout(LayoutKind.Explicit)]
     private struct INPUTUNION
     {
+        [FieldOffset(0)] public MOUSEINPUT mi;
         [FieldOffset(0)] public KEYBDINPUT ki;
     }
 
@@ -170,10 +182,29 @@ public class RawInputGamepadService : IDisposable
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
+    // Mouse control via user32.dll
+    [DllImport("user32.dll")]
+    private static extern bool SetCursorPos(int X, int Y);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+
     private const uint INPUT_KEYBOARD = 1;
+    private const uint INPUT_MOUSE = 0;
     private const uint KEYEVENTF_KEYUP = 0x0002;
     private const ushort VK_MENU = 0x12;    // Alt key
     private const ushort VK_TAB = 0x09;     // Tab key
+
+    // Mouse event flags
+    private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
+    private const uint MOUSEEVENTF_LEFTUP = 0x0004;
 
     // Events
     public event Action<GamepadButton>? OnButtonPressed;
@@ -202,6 +233,13 @@ public class RawInputGamepadService : IDisposable
     private DateTime? _altTabComboStartTime = null;
     private bool _altTabFired = false;
     private const int ALT_TAB_QUICK_TAP_MS = 500; // Must release within 500ms for Alt+Tab
+
+    // Mouse control settings (right stick)
+    private const uint MOUSE_DEADZONE = 8000;
+    private const float MOUSE_SPEED_MAX = 20.0f; // Max pixels per poll at full deflection
+    private const float MOUSE_SPEED_MIN = 2.0f;  // Min pixels per poll (for precision)
+    private DateTime _lastRightStickActivity = DateTime.MinValue;
+    private const int MOUSE_MODE_TIMEOUT_MS = 1000; // A button triggers click for 1s after stick use
 
     // Configurable button mapping (loaded from config)
     private uint _buttonA;
@@ -360,6 +398,9 @@ public class RawInputGamepadService : IDisposable
         // Process direction (D-pad via POV hat + left stick)
         ProcessDirection(info);
 
+        // Process right stick for mouse control
+        ProcessRightStickMouse(info);
+
         // Check close combo (LB + RB + Start for 3s)
         CheckCloseCombo(info.dwButtons);
 
@@ -389,7 +430,18 @@ public class RawInputGamepadService : IDisposable
         }
 
         // Map buttons using configurable mapping
-        if ((newPresses & _buttonA) != 0) OnButtonPressed?.Invoke(GamepadButton.A);
+        // A button: mouse click when in mouse mode, otherwise normal select
+        if ((newPresses & _buttonA) != 0)
+        {
+            if (IsInMouseMode())
+            {
+                SimulateMouseClick();
+            }
+            else
+            {
+                OnButtonPressed?.Invoke(GamepadButton.A);
+            }
+        }
         if ((newPresses & _buttonB) != 0) OnButtonPressed?.Invoke(GamepadButton.B);
         if ((newPresses & _buttonX) != 0) OnButtonPressed?.Invoke(GamepadButton.X);
         if ((newPresses & _buttonY) != 0) OnButtonPressed?.Invoke(GamepadButton.Y);
@@ -542,7 +594,81 @@ public class RawInputGamepadService : IDisposable
         System.Diagnostics.Debug.WriteLine("Alt+Tab simulated via gamepad LB+RB");
     }
 
+    private bool IsInMouseMode()
+    {
+        return (DateTime.Now - _lastRightStickActivity).TotalMilliseconds < MOUSE_MODE_TIMEOUT_MS;
+    }
+
+    private void ProcessRightStickMouse(JOYINFOEX info)
+    {
+        const uint CENTER = 32767;
+
+        // Read right stick axes (dwZpos = X, dwRpos = Y for most DirectInput controllers)
+        int xOffset = (int)info.dwZpos - (int)CENTER;
+        int yOffset = (int)info.dwRpos - (int)CENTER;
+
+        // Apply deadzone
+        if (Math.Abs(xOffset) < MOUSE_DEADZONE) xOffset = 0;
+        if (Math.Abs(yOffset) < MOUSE_DEADZONE) yOffset = 0;
+
+        // Track activity for mouse mode
+        if (xOffset != 0 || yOffset != 0)
+        {
+            _lastRightStickActivity = DateTime.Now;
+        }
+
+        if (xOffset == 0 && yOffset == 0) return;
+
+        // Calculate movement with variable speed based on deflection
+        float magnitude = (float)Math.Sqrt(xOffset * xOffset + yOffset * yOffset);
+        float maxMagnitude = 32767 - MOUSE_DEADZONE;
+        float speedFactor = Math.Min(magnitude / maxMagnitude, 1.0f);
+        float speed = MOUSE_SPEED_MIN + (MOUSE_SPEED_MAX - MOUSE_SPEED_MIN) * speedFactor;
+
+        // Normalize and apply speed
+        float normalizedX = xOffset / magnitude;
+        float normalizedY = yOffset / magnitude;
+        int moveX = (int)(normalizedX * speed * speedFactor);
+        int moveY = (int)(normalizedY * speed * speedFactor);
+
+        if (moveX == 0 && moveY == 0) return;
+
+        // Move cursor
+        if (GetCursorPos(out POINT currentPos))
+        {
+            SetCursorPos(currentPos.X + moveX, currentPos.Y + moveY);
+        }
+    }
+
+    private void SimulateMouseClick()
+    {
+        var inputs = new INPUT[2];
+
+        // Mouse button down
+        inputs[0].type = INPUT_MOUSE;
+        inputs[0].u.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+
+        // Mouse button up
+        inputs[1].type = INPUT_MOUSE;
+        inputs[1].u.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+
+        SendInput(2, inputs, Marshal.SizeOf<INPUT>());
+        System.Diagnostics.Debug.WriteLine("Mouse click simulated via gamepad A button");
+    }
+
     public bool IsConnected => _connectedJoystickId != uint.MaxValue;
+
+    /// <summary>
+    /// Resets navigation state to allow immediate response to direction input.
+    /// Call this when returning from web apps or when focus is restored.
+    /// </summary>
+    public void ResetNavigationState()
+    {
+        _lastDirection = GamepadDirection.None;
+        _lastNavigationTime = DateTime.MinValue;
+        _isHoldingDirection = false;
+        System.Diagnostics.Debug.WriteLine("Navigation state reset");
+    }
 
     public void Dispose()
     {

@@ -1,10 +1,10 @@
 # KOTAK
 
-A fullscreen, TV-friendly launcher for Windows 10/11 Mini PCs. Built with WPF (.NET 8) and WebView2. Coded by Claude Code.
+A fullscreen, TV-friendly launcher for Windows 10/11. Built with WPF (.NET 8) and WebView2. Coded by Claude Code.
 
 ## Why was KOTAK developed?
 
-1. **Turn any Mini PC into a TV Box** - Use your Windows Mini PC as a dedicated media center with a couch-friendly UI optimized for TV viewing and gamepad navigation
+1. **Turn any Old Laptop/Mini PC into a TV Box** - Use your Windows Mini PC as a dedicated media center with a couch-friendly UI optimized for TV viewing and gamepad navigation
 2. **Lightweight App Launcher** - Simple, fast, and focused. No bloat, just launch your apps
 3. **Because I can** - Similar apps exist, but I love to procrastinate productively
 
@@ -15,7 +15,7 @@ A fullscreen, TV-friendly launcher for Windows 10/11 Mini PCs. Built with WPF (.
 - **Dynamic App Management** - Add/remove apps without rebuilding
 - **IPTV Support** - Add M3U/M3U8 playlists to watch live TV channels
 - **Wi-Fi Management** - Scan and connect to networks
-- **System Controls** - Shutdown, restart, sleep from the launcher
+- **System Controls** - Shutdown, restart, sleep, volume from the launcher
 - **Utilities** - File explorer, file transfer, browser, Tailscale VPN
 
 ## Requirements
@@ -44,26 +44,46 @@ kotak.bat clean     # Clean build outputs
 
 ## Controls
 
-### Gamepad
+### Gamepad - KOTAK Launcher
 | Button | Action |
 |--------|--------|
 | D-pad / Left Stick | Navigate |
-| A | Select |
+| Right Stick | Mouse cursor control |
+| A | Select / Mouse click (after using right stick) |
 | B | Back |
 | Y | Add App / Add IPTV Playlist |
 | X | Remove App (on tile) |
 | LB / RB | Switch tabs |
 | Start | Settings Menu |
 
-### Keyboard
+### Gamepad - Web Apps
+| Button | Action |
+|--------|--------|
+| D-pad / Left Stick | Scroll page |
+| Right Stick | Mouse cursor control |
+| A | Click / Mouse click (after using right stick) |
+| B | Browser Back |
+| X | Close web app (return to launcher) |
+| LB + RB + Start | Close web app (return to launcher) |
+
+### Keyboard - KOTAK Launcher
 | Key | Action |
 |-----|--------|
 | Arrow Keys | Navigate |
 | Enter | Select |
-| Escape | Back |
+| Escape / B | Back |
 | Y | Add App / Add IPTV Playlist |
 | Delete | Remove App (on tile) |
 | Space | Settings Menu |
+
+### Keyboard - Web Apps
+| Key | Action |
+|-----|--------|
+| Arrow Keys | Scroll page |
+| Enter | Click |
+| Escape / B | Browser Back |
+| X | Close web app (return to launcher) |
+| Ctrl + Escape | Close web app (return to launcher) |
 
 ## Configuration
 
@@ -220,9 +240,4 @@ Install the [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-e
 
 MIT License
 
-
-## TODO
-- Add Radio streaming support
-- Add USB TV remote support
-- Gamepad control over web apps
 

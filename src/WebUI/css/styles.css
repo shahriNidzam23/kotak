@@ -452,6 +452,20 @@ body.cursor-hidden * {
     gap: var(--spacing-sm);
 }
 
+.wifi-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.wifi-list::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.wifi-list::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+}
+
 .wifi-item {
     display: flex;
     align-items: center;
@@ -745,80 +759,6 @@ body.cursor-hidden * {
 .settings-version .version-number {
     color: var(--accent);
     font-weight: 600;
-}
-
-/* Settings Slider Controls (Volume/Brightness) */
-.settings-slider-item {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-md) var(--spacing-lg);
-    background: var(--bg-card);
-    border: 3px solid transparent;
-    border-radius: var(--tile-radius);
-}
-
-.slider-header {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    font-size: var(--font-size-md);
-}
-
-.slider-header .icon {
-    font-size: var(--font-size-lg);
-    width: 40px;
-    text-align: center;
-}
-
-.slider-value {
-    margin-left: auto;
-    font-weight: 600;
-    color: var(--accent);
-    min-width: 50px;
-    text-align: right;
-}
-
-.slider-controls {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    padding-left: 56px; /* align with text after icon */
-}
-
-.slider-btn {
-    width: 44px;
-    height: 44px;
-    background: var(--bg-secondary);
-    border: 3px solid transparent;
-    border-radius: 50%;
-    color: var(--text-primary);
-    font-size: var(--font-size-lg);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.slider-btn:hover {
-    background: var(--bg-primary);
-}
-
-.slider-track {
-    flex: 1;
-    height: 8px;
-    background: var(--bg-secondary);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.slider-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 4px;
-    transition: width 0.15s ease;
 }
 
 /* ============================
@@ -1202,6 +1142,20 @@ body.cursor-hidden * {
     overflow-y: auto;
 }
 
+.controller-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.controller-container::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.controller-container::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+}
+
 .controller-status {
     display: flex;
     align-items: center;
@@ -1443,6 +1397,20 @@ body.cursor-hidden * {
     overflow-y: auto;
 }
 
+.utilities-grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.utilities-grid::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.utilities-grid::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+}
+
 .utility-tile {
     display: flex;
     flex-direction: column;
@@ -1494,6 +1462,20 @@ body.cursor-hidden * {
     gap: var(--spacing-md);
     padding: var(--spacing-lg) 0;
     overflow-y: auto;
+}
+
+.running-apps-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.running-apps-list::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.running-apps-list::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
 }
 
 .running-apps-list .empty-state {
@@ -1707,6 +1689,20 @@ body.cursor-hidden * {
     overflow-y: auto;
 }
 
+.explorer-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.explorer-list::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.explorer-list::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+}
+
 .explorer-item {
     display: flex;
     align-items: center;
@@ -1776,6 +1772,20 @@ body.cursor-hidden * {
     align-items: center;
     padding: var(--spacing-xl) 0;
     overflow-y: auto;
+}
+
+.transfer-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.transfer-container::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.transfer-container::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
 }
 
 .transfer-status {
@@ -1888,6 +1898,20 @@ body.cursor-hidden * {
     background: var(--bg-secondary);
     border-radius: var(--tile-radius);
     padding: var(--spacing-md);
+}
+
+.transfer-log::-webkit-scrollbar {
+    width: 8px;
+}
+
+.transfer-log::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.transfer-log::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
 }
 
 .transfer-log:empty {

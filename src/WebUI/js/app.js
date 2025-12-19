@@ -401,31 +401,6 @@ async function connectToWifi(password) {
 // Settings & System Actions
 // ============================
 
-// ============================
-// Brightness Controls
-// ============================
-
-async function loadBrightness() {
-    if (!bridge) return;
-
-    try {
-        // Get brightness (may not be supported on desktops)
-        const brightnessSupported = bridge.IsBrightnessSupported();
-        const brightnessSlider = document.querySelector('.settings-slider-item:has(#brightness-value)');
-
-        if (brightnessSupported) {
-            const brightness = bridge.GetBrightness();
-            updateBrightnessDisplay(brightness);
-            if (brightnessSlider) brightnessSlider.style.display = '';
-        } else {
-            // Hide brightness control on desktops
-            if (brightnessSlider) brightnessSlider.style.display = 'none';
-        }
-    } catch (e) {
-        console.error('Error loading brightness:', e);
-    }
-}
-
 function loadVersion() {
     if (!bridge) return;
 
@@ -602,27 +577,6 @@ function cancelUpdateDownload() {
         showToast('Update cancelled');
     } catch (e) {
         console.error('Error cancelling update:', e);
-    }
-}
-
-function updateBrightnessDisplay(level) {
-    level = Math.max(0, Math.min(100, level));
-    document.getElementById('brightness-value').textContent = `${level}%`;
-    document.getElementById('brightness-fill').style.width = `${level}%`;
-}
-
-function adjustBrightness(delta) {
-    if (!bridge) return;
-
-    try {
-        const current = bridge.GetBrightness();
-        const newLevel = Math.max(0, Math.min(100, current + delta));
-        const success = bridge.SetBrightness(newLevel);
-        if (success) {
-            updateBrightnessDisplay(newLevel);
-        }
-    } catch (e) {
-        console.error('Error adjusting brightness:', e);
     }
 }
 
@@ -1162,12 +1116,6 @@ function handleMouseClick(e) {
         case 'cancel-mapping':
             cancelControllerMapping();
             break;
-        case 'brightness-up':
-            adjustBrightness(10);
-            break;
-        case 'brightness-down':
-            adjustBrightness(-10);
-            break;
         case 'switch-tab':
             switchTab(target.dataset.tab);
             break;
@@ -1661,7 +1609,6 @@ function switchTab(tabName) {
 
     // Load data for specific tabs
     if (tabName === 'settings') {
-        loadBrightness();
         updateWifiStatus();
         loadVersion();
     } else if (tabName === 'iptv') {

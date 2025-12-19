@@ -118,7 +118,7 @@ echo KOTAK Release to GitHub
 echo ========================================
 
 REM Check if gh CLI is available
-where gh >nul 2>&1
+where gh >NUL 2>NUL
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: GitHub CLI [gh] is not installed.
     echo Install from: https://cli.github.com/
@@ -126,7 +126,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 REM Check if authenticated
-gh auth status >nul 2>&1
+gh auth status >NUL 2>NUL
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Not authenticated with GitHub CLI.
     echo Run: gh auth login
@@ -147,8 +147,8 @@ echo ========================================
 
 REM Git operations
 git add .
-git commit -m "Release v!RELEASE_VER!" 2>nul
-git tag -a "v!RELEASE_VER!" -m "Release v!RELEASE_VER!" 2>nul
+git commit -m "Release v!RELEASE_VER!" 2>NUL
+git tag -a "v!RELEASE_VER!" -m "Release v!RELEASE_VER!" 2>NUL
 
 echo Pushing to GitHub...
 git push
@@ -164,7 +164,7 @@ gh release create "v!RELEASE_VER!" "Kotak-v!RELEASE_VER!.zip" --title "KOTAK v!R
 set "RELEASE_RESULT=!ERRORLEVEL!"
 
 REM Clean up zip file
-del "Kotak-v!RELEASE_VER!.zip" 2>nul
+del "Kotak-v!RELEASE_VER!.zip" 2>NUL
 
 if !RELEASE_RESULT! EQU 0 (
     echo.

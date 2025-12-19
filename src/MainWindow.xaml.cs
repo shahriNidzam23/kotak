@@ -143,6 +143,9 @@ public partial class MainWindow : Window
             // Register JavaScript bridge
             webView.CoreWebView2.AddHostObjectToScript("bridge", _jsBridge);
 
+            // Handle navigation completed to restore focus
+            webView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
+
             // Load the UI
             await LoadWebUI();
         }
@@ -241,6 +244,26 @@ public partial class MainWindow : Window
         closeHintOverlay.Visibility = Visibility.Collapsed;
         var url = skipSplash ? LAUNCHER_URL + "?skipSplash=1" : LAUNCHER_URL;
         webView.CoreWebView2?.Navigate(url);
+    }
+
+    private void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+    {
+        // Check if we navigated back to the launcher
+        var currentUrl = webView.CoreWebView2?.Source ?? "";
+        if (currentUrl.StartsWith("https://kotakui.local/"))
+        {
+            // Reset gamepad navigation state to allow immediate response
+            _gamepadService?.ResetNavigationState();
+
+            // Restore focus to enable gamepad navigation
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                this.Activate();
+                this.Focus();
+                webView?.Focus();
+                System.Diagnostics.Debug.WriteLine("Focus restored after navigation to launcher");
+            }), System.Windows.Threading.DispatcherPriority.Input);
+        }
     }
 
     private void GamepadService_OnCloseComboHeld()
@@ -349,6 +372,13 @@ public partial class MainWindow : Window
             // This prevents gamepad shortcuts from interfering with other apps
             if (!IsWindowInForeground()) return;
 
+            // Handle web app gamepad controls
+            if (_isWebAppActive)
+            {
+                HandleWebAppGamepadButton(button);
+                return;
+            }
+
             var message = JsonSerializer.Serialize(new
             {
                 type = "gamepad",
@@ -367,6 +397,13 @@ public partial class MainWindow : Window
             // This prevents gamepad shortcuts from interfering with other apps
             if (!IsWindowInForeground()) return;
 
+            // Handle web app scrolling with D-pad
+            if (_isWebAppActive)
+            {
+                HandleWebAppGamepadDirection(direction);
+                return;
+            }
+
             var message = JsonSerializer.Serialize(new
             {
                 type = "gamepad",
@@ -375,6 +412,75 @@ public partial class MainWindow : Window
             });
             webView.CoreWebView2?.PostWebMessageAsString(message);
         });
+    }
+
+    // ============================
+    // Web App Gamepad Controls
+    // ============================
+
+    private void HandleWebAppGamepadButton(GamepadButton button)
+    {
+        switch (button)
+        {
+            case GamepadButton.A:
+                // Simulate click on focused element or center of screen
+                ExecuteWebAppScript(@"
+                    (function() {
+                        var el = document.activeElement;
+                        if (el && el !== document.body) {
+                            el.click();
+                        } else {
+                            // Try to click center of viewport
+                            var x = window.innerWidth / 2;
+                            var y = window.innerHeight / 2;
+                            var target = document.elementFromPoint(x, y);
+                            if (target) target.click();
+                        }
+                    })();
+                ");
+                break;
+
+            case GamepadButton.B:
+            case GamepadButton.Back:
+                // Go back in browser history
+                ExecuteWebAppScript("window.history.back();");
+                break;
+
+            case GamepadButton.X:
+                // Close web app and return to launcher
+                NavigateToLauncher();
+                break;
+        }
+    }
+
+    private void HandleWebAppGamepadDirection(GamepadDirection direction)
+    {
+        int scrollAmount = 150; // pixels to scroll
+        string script = direction switch
+        {
+            GamepadDirection.Up => $"window.scrollBy(0, -{scrollAmount});",
+            GamepadDirection.Down => $"window.scrollBy(0, {scrollAmount});",
+            GamepadDirection.Left => $"window.scrollBy(-{scrollAmount}, 0);",
+            GamepadDirection.Right => $"window.scrollBy({scrollAmount}, 0);",
+            _ => ""
+        };
+
+        if (!string.IsNullOrEmpty(script))
+        {
+            ExecuteWebAppScript(script);
+        }
+    }
+
+    private async void ExecuteWebAppScript(string script)
+    {
+        try
+        {
+            await webView.CoreWebView2.ExecuteScriptAsync(script);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"ExecuteWebAppScript error: {ex.Message}");
+        }
     }
 
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -386,6 +492,45 @@ public partial class MainWindow : Window
             NavigateToLauncher();
             e.Handled = true;
             return;
+        }
+
+        // Handle keyboard navigation in web apps
+        if (_isWebAppActive)
+        {
+            switch (e.Key)
+            {
+                case Key.Up:
+                    HandleWebAppGamepadDirection(GamepadDirection.Up);
+                    e.Handled = true;
+                    return;
+                case Key.Down:
+                    HandleWebAppGamepadDirection(GamepadDirection.Down);
+                    e.Handled = true;
+                    return;
+                case Key.Left:
+                    HandleWebAppGamepadDirection(GamepadDirection.Left);
+                    e.Handled = true;
+                    return;
+                case Key.Right:
+                    HandleWebAppGamepadDirection(GamepadDirection.Right);
+                    e.Handled = true;
+                    return;
+                case Key.Enter:
+                    HandleWebAppGamepadButton(GamepadButton.A);
+                    e.Handled = true;
+                    return;
+                case Key.Escape:
+                case Key.Back:
+                case Key.B:
+                    HandleWebAppGamepadButton(GamepadButton.B);
+                    e.Handled = true;
+                    return;
+                case Key.X:
+                    // Close web app and return to launcher
+                    HandleWebAppGamepadButton(GamepadButton.X);
+                    e.Handled = true;
+                    return;
+            }
         }
 
         // When in controller mapping mode, allow number keys 1-9 to simulate button presses
