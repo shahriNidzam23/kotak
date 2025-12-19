@@ -247,6 +247,88 @@ function hideAllDialogs() {
 }
 
 // ============================
+// About Dialog
+// ============================
+function showAboutDialog() {
+    if (!bridge) return;
+
+    try {
+        const markdown = bridge.GetReadmeContent();
+        const html = markdownToHtml(markdown);
+        document.getElementById('about-content').innerHTML = html;
+        document.getElementById('about-dialog').classList.remove('hidden');
+        updateFocusableElements();
+    } catch (e) {
+        console.error('Error loading README:', e);
+    }
+}
+
+function hideAboutDialog() {
+    document.getElementById('about-dialog').classList.add('hidden');
+    updateFocusableElements();
+}
+
+// Simple markdown to HTML converter
+function markdownToHtml(markdown) {
+    if (!markdown) return '';
+
+    let html = markdown
+        // Escape HTML
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+
+        // Code blocks (must be before inline code)
+        .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+
+        // Inline code
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+
+        // Headers
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+
+        // Bold and italic
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+
+        // Links
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+
+        // Horizontal rules
+        .replace(/^---$/gm, '<hr>')
+
+        // Unordered lists
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+
+        // Ordered lists
+        .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+
+        // Tables (simple support)
+        .replace(/^\|(.+)\|$/gm, (match, content) => {
+            const cells = content.split('|').map(c => c.trim());
+            if (cells.every(c => /^[-:]+$/.test(c))) {
+                return ''; // Skip separator row
+            }
+            const isHeader = cells.some(c => c.includes('---'));
+            const tag = isHeader ? 'th' : 'td';
+            return '<tr>' + cells.map(c => `<${tag}>${c}</${tag}>`).join('') + '</tr>';
+        })
+        .replace(/(<tr>.*<\/tr>\n?)+/g, '<table>$&</table>')
+
+        // Paragraphs (lines that aren't already wrapped)
+        .replace(/^(?!<[a-z]|$)(.+)$/gm, '<p>$1</p>')
+
+        // Clean up empty paragraphs and extra whitespace
+        .replace(/<p><\/p>/g, '')
+        .replace(/\n{3,}/g, '\n\n');
+
+    return html;
+}
+
+// ============================
 // Wi-Fi Management
 // ============================
 async function updateWifiStatus() {
@@ -897,6 +979,12 @@ function activateFocused() {
         case 'cancel-update':
             cancelUpdateDownload();
             break;
+        case 'about':
+            showAboutDialog();
+            break;
+        case 'close-about':
+            hideAboutDialog();
+            break;
         case 'confirm-yes':
             handleConfirmYes();
             break;
@@ -1090,6 +1178,12 @@ function handleMouseClick(e) {
             break;
         case 'cancel-update':
             cancelUpdateDownload();
+            break;
+        case 'about':
+            showAboutDialog();
+            break;
+        case 'close-about':
+            hideAboutDialog();
             break;
         case 'confirm-yes':
             handleConfirmYes();

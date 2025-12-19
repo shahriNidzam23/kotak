@@ -219,6 +219,10 @@
                     <span>KOTAK</span>
                     <span class="version-number" id="app-version">v1.0.0</span>
                 </div>
+                <button class="settings-item about-btn focusable" data-action="about">
+                    <span class="icon">&#9432;</span>
+                    <span>About KOTAK</span>
+                </button>
             </div>
         </main>
 
@@ -461,6 +465,19 @@
             <p id="iptv-error-message">Unable to play this channel. The stream may be unavailable.</p>
             <div class="dialog-actions">
                 <button class="btn focusable" data-action="close-iptv-error">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Dialog -->
+    <div id="about-dialog" class="dialog hidden">
+        <div class="dialog-content about-dialog-content">
+            <div class="about-header">
+                <h3>About KOTAK</h3>
+                <button class="about-close-btn focusable" data-action="close-about">&#10005;</button>
+            </div>
+            <div class="about-body" id="about-content">
+                Loading...
             </div>
         </div>
     </div>

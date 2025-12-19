@@ -386,6 +386,38 @@ public class JsBridge
         return version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "1.0.0";
     }
 
+    /// <summary>
+    /// Get README.md content for About screen
+    /// </summary>
+    public string GetReadmeContent()
+    {
+        try
+        {
+            // Check multiple locations for README.md
+            var possiblePaths = new[]
+            {
+                Path.Combine(AppContext.BaseDirectory, "README.md"),
+                Path.Combine(AppContext.BaseDirectory, "..", "README.md"),
+                Path.Combine(AppContext.BaseDirectory, "..", "..", "README.md")
+            };
+
+            foreach (var path in possiblePaths)
+            {
+                var fullPath = Path.GetFullPath(path);
+                if (File.Exists(fullPath))
+                {
+                    return File.ReadAllText(fullPath);
+                }
+            }
+
+            return "README.md not found.";
+        }
+        catch (Exception ex)
+        {
+            return $"Error reading README: {ex.Message}";
+        }
+    }
+
     // ============================
     // Controller Configuration
     // ============================
