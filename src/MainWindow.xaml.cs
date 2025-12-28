@@ -50,6 +50,56 @@ public partial class MainWindow : Window
     private const int SW_RESTORE = 9;
     private const int SW_SHOW = 5;
 
+    // Mouse simulation P/Invoke
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetCursorPos(int X, int Y);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out POINT lpPoint);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct INPUT
+    {
+        public uint type;
+        public INPUTUNION u;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    private struct INPUTUNION
+    {
+        [FieldOffset(0)] public MOUSEINPUT mi;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MOUSEINPUT
+    {
+        public int dx;
+        public int dy;
+        public uint mouseData;
+        public uint dwFlags;
+        public uint time;
+        public IntPtr dwExtraInfo;
+    }
+
+    private const uint INPUT_MOUSE = 0;
+    private const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
+    private const uint MOUSEEVENTF_LEFTUP = 0x0004;
+    private const uint MOUSEEVENTF_RIGHTDOWN = 0x0008;
+    private const uint MOUSEEVENTF_RIGHTUP = 0x0010;
+    private const uint MOUSEEVENTF_WHEEL = 0x0800;
+    private const uint MOUSEEVENTF_HWHEEL = 0x1000;
+    private const int WHEEL_DELTA = 120;
+
     private JsBridge? _jsBridge;
     private GamepadManager? _gamepadManager;
     private AppConfigService? _configService;
@@ -776,6 +826,35 @@ public partial class MainWindow : Window
                     });
                     webView.CoreWebView2?.PostWebMessageAsString(textMsg);
                     break;
+
+                case "mouseMove":
+                    try
+                    {
+                        var moveData = JsonSerializer.Deserialize<JsonElement>(value);
+                        int deltaX = moveData.GetProperty("x").GetInt32();
+                        int deltaY = moveData.GetProperty("y").GetInt32();
+                        MoveCursor(deltaX, deltaY);
+                    }
+                    catch { }
+                    break;
+
+                case "mouseClick":
+                    if (value == "left")
+                        SimulateMouseClick();
+                    else if (value == "right")
+                        SimulateRightClick();
+                    break;
+
+                case "scroll":
+                    try
+                    {
+                        var scrollData = JsonSerializer.Deserialize<JsonElement>(value);
+                        int scrollX = scrollData.GetProperty("x").GetInt32();
+                        int scrollY = scrollData.GetProperty("y").GetInt32();
+                        SimulateScroll(scrollX, scrollY);
+                    }
+                    catch { }
+                    break;
             }
         });
     }
@@ -835,6 +914,60 @@ public partial class MainWindow : Window
                 return i + 1;
         }
         return 0;
+    }
+
+    // ============================
+    // Mouse Simulation (Web Remote)
+    // ============================
+
+    private void MoveCursor(int deltaX, int deltaY)
+    {
+        if (GetCursorPos(out POINT pos))
+        {
+            SetCursorPos(pos.X + deltaX, pos.Y + deltaY);
+        }
+    }
+
+    private void SimulateMouseClick()
+    {
+        var inputs = new INPUT[2];
+        inputs[0].type = INPUT_MOUSE;
+        inputs[0].u.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+        inputs[1].type = INPUT_MOUSE;
+        inputs[1].u.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+        SendInput(2, inputs, Marshal.SizeOf<INPUT>());
+    }
+
+    private void SimulateRightClick()
+    {
+        var inputs = new INPUT[2];
+        inputs[0].type = INPUT_MOUSE;
+        inputs[0].u.mi.dwFlags = MOUSEEVENTF_RIGHTDOWN;
+        inputs[1].type = INPUT_MOUSE;
+        inputs[1].u.mi.dwFlags = MOUSEEVENTF_RIGHTUP;
+        SendInput(2, inputs, Marshal.SizeOf<INPUT>());
+    }
+
+    private void SimulateScroll(int deltaX, int deltaY)
+    {
+        // Vertical scroll
+        if (deltaY != 0)
+        {
+            var inputs = new INPUT[1];
+            inputs[0].type = INPUT_MOUSE;
+            inputs[0].u.mi.dwFlags = MOUSEEVENTF_WHEEL;
+            inputs[0].u.mi.mouseData = (uint)(deltaY * WHEEL_DELTA / 10);
+            SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+        }
+        // Horizontal scroll
+        if (deltaX != 0)
+        {
+            var inputs = new INPUT[1];
+            inputs[0].type = INPUT_MOUSE;
+            inputs[0].u.mi.dwFlags = MOUSEEVENTF_HWHEEL;
+            inputs[0].u.mi.mouseData = (uint)(deltaX * WHEEL_DELTA / 10);
+            SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+        }
     }
 
     // ============================

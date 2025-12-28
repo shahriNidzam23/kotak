@@ -22,7 +22,10 @@
     <!-- Main App Grid Screen -->
     <div id="main-screen" class="screen active">
         <header class="header">
-            <h1 class="logo">KOTAK</h1>
+            <div class="header-left">
+                <h1 class="logo">KOTAK</h1>
+                <span class="header-version" id="header-version">v1.0.0</span>
+            </div>
             <div class="header-datetime">
                 <span class="date" id="header-date"></span>
                 <span class="time" id="header-time"></span>
@@ -234,7 +237,11 @@
                 <span class="hint"><kbd>Y</kbd> Add App</span>
                 <span class="hint"><kbd>LB</kbd> <span class="tab-arrow">&#9664;</span> Tab <span class="tab-arrow">&#9654;</span> <kbd>RB</kbd></span>
             </div>
-            <div class="footer-version" id="footer-version">v1.0.0</div>
+            <div class="footer-qr" id="footer-qr">
+                <div class="qr-label">Web Remote</div>
+                <canvas id="qr-code" width="64" height="64"></canvas>
+                <div class="qr-url" id="qr-url"></div>
+            </div>
         </footer>
     </div>
 
@@ -499,6 +506,7 @@
         </div>
     </div>
 
+    <script src="js/qrcode.min.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

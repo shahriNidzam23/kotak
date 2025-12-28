@@ -111,11 +111,26 @@ body.cursor-hidden * {
     flex-shrink: 0;
 }
 
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
 .logo {
     font-size: var(--font-size-xl);
     font-weight: 700;
     color: var(--accent);
     text-shadow: 0 0 20px var(--accent-glow);
+}
+
+.header-version {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    background: var(--bg-card);
+    border-radius: 6px;
+    border: 1px solid var(--bg-glass-border);
 }
 
 .header h2 {
@@ -396,6 +411,38 @@ body.cursor-hidden * {
     background: var(--bg-card);
     border-radius: 8px;
     border: 1px solid var(--bg-glass-border);
+}
+
+.footer-qr {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--bg-glass-border);
+}
+
+.footer-qr .qr-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+}
+
+.footer-qr #qr-code {
+    border-radius: 4px;
+    background: white;
+    padding: 2px;
+}
+
+.footer-qr .qr-url {
+    font-size: 10px;
+    color: var(--text-secondary);
+    max-width: 80px;
+    word-break: break-all;
+    line-height: 1.2;
 }
 
 .hint .tab-arrow {

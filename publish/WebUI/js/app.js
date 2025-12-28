@@ -59,6 +59,7 @@ async function initializeApp() {
     setupCursorAutoHide();
     updateFocusableElements();
     loadVersion();
+    initWebRemote();
 
     if (skipSplash) {
         // Skip splash animation (returning from app via LB+RB+Start combo)
@@ -497,10 +498,10 @@ function loadVersion() {
             versionEl.textContent = versionText;
         }
 
-        // Update footer version
-        const footerVersionEl = document.getElementById('footer-version');
-        if (footerVersionEl) {
-            footerVersionEl.textContent = versionText;
+        // Update header version
+        const headerVersionEl = document.getElementById('header-version');
+        if (headerVersionEl) {
+            headerVersionEl.textContent = versionText;
         }
     } catch (e) {
         console.error('Error loading version:', e);
@@ -896,6 +897,9 @@ function focusElement(index) {
     element.classList.add('focused');
     element.focus();
     element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Broadcast state to Web Remote
+    broadcastUIState();
 }
 
 function navigateFocus(direction) {
@@ -1419,6 +1423,9 @@ function setupGamepadListener() {
                 updateProgressUI(data.phase, data.progress, data.message);
             } else if (data.type === 'updateError') {
                 showUpdateError(data.error);
+            } else if (data.type === 'remoteText') {
+                // Handle text input from Web Remote
+                handleRemoteText(data.text);
             }
         });
     } else {
@@ -2721,5 +2728,129 @@ function markChannelAsFailed(playlistId, channelId) {
         }
     } catch (error) {
         console.error('Failed to mark channel as failed:', error);
+    }
+}
+
+// ============================
+// Web Remote
+// ============================
+
+function initWebRemote() {
+    if (!bridge) return;
+
+    try {
+        const url = bridge.GetWebRemoteUrl();
+        if (url) {
+            updateQRCode(url);
+        }
+    } catch (e) {
+        console.error('Error initializing Web Remote:', e);
+    }
+}
+
+// Broadcast UI state to Web Remote clients for Mirror view
+let broadcastDebounce = null;
+function broadcastUIState() {
+    if (!bridge) return;
+
+    // Debounce broadcasts to avoid flooding
+    if (broadcastDebounce) {
+        clearTimeout(broadcastDebounce);
+    }
+
+    broadcastDebounce = setTimeout(() => {
+        try {
+            // Prepare simplified apps data for remote
+            const apps = state.apps.map(app => ({
+                name: app.name,
+                type: app.type,
+                thumbnail: app.thumbnail || null
+            }));
+
+            bridge.BroadcastUIState(
+                state.currentScreen,
+                state.currentTab || 'apps',
+                state.focusedIndex,
+                JSON.stringify(apps)
+            );
+        } catch (e) {
+            // Silently ignore broadcast errors
+        }
+    }, 50);
+}
+
+function handleRemoteText(text) {
+    // Find focused input and set value
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        activeEl.value = text;
+        // Dispatch input event to trigger any listeners
+        activeEl.dispatchEvent(new Event('input', { bubbles: true }));
+        activeEl.dispatchEvent(new Event('change', { bubbles: true }));
+        showToast('Text received from remote');
+    } else {
+        // No input focused - try to find any visible input in the active dialog
+        const visibleDialog = document.querySelector('.dialog:not(.hidden)');
+        if (visibleDialog) {
+            const input = visibleDialog.querySelector('input:not([type="hidden"]), textarea');
+            if (input) {
+                input.value = text;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                input.focus();
+                showToast('Text received from remote');
+                return;
+            }
+        }
+        showToast('No input field focused');
+    }
+}
+
+function updateQRCode(url) {
+    const canvas = document.getElementById('qr-code');
+    const urlEl = document.getElementById('qr-url');
+
+    if (!canvas || !url) return;
+
+    // Update URL text
+    if (urlEl) {
+        urlEl.textContent = url;
+    }
+
+    // Generate QR code using qrcode.min.js library
+    try {
+        const qr = QRCode.create(url, { errorCorrectionLevel: 'L' });
+        const size = 64;
+        const ctx = canvas.getContext('2d');
+        const moduleCount = qr.moduleCount;
+        const moduleSize = size / moduleCount;
+
+        // Clear canvas
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+
+        // Draw QR code
+        ctx.fillStyle = '#000000';
+        for (let row = 0; row < moduleCount; row++) {
+            for (let col = 0; col < moduleCount; col++) {
+                if (qr.modules[row][col]) {
+                    ctx.fillRect(
+                        Math.floor(col * moduleSize),
+                        Math.floor(row * moduleSize),
+                        Math.ceil(moduleSize),
+                        Math.ceil(moduleSize)
+                    );
+                }
+            }
+        }
+    } catch (e) {
+        console.error('QR code generation failed:', e);
+        // Fallback: just show URL text
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, 0, 64, 64);
+        ctx.fillStyle = '#fff';
+        ctx.font = '8px monospace';
+        ctx.fillText('QR', 24, 34);
     }
 }

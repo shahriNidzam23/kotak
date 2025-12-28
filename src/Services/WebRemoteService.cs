@@ -468,38 +468,33 @@ public class WebRemoteService : IDisposable
         }
         .bumper-btn:active { transform: scale(0.95); background: #3a3a48; }
 
-        /* D-Pad */
-        .dpad-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+        /* Touchpad */
+        .touchpad {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(145deg, #1a1a28, #252538);
+            border-radius: 20px;
             margin-bottom: 16px;
-        }
-        .btn {
-            aspect-ratio: 1;
-            border: none;
-            border-radius: 16px;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.1s ease;
             display: flex;
             align-items: center;
             justify-content: center;
+            touch-action: none;
+            position: relative;
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.05);
         }
-        .btn:active { transform: scale(0.9); }
-        .dpad-btn {
-            background: linear-gradient(145deg, #252538, #1a1a28);
-            color: #5E72E4;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        .touchpad-hint {
+            color: #444;
+            font-size: 13px;
+            pointer-events: none;
+            text-align: center;
+            line-height: 1.4;
         }
-        .dpad-btn:active { background: #1a1a28; }
-        .center-btn {
-            background: linear-gradient(145deg, #5E72E4, #4A5BC7);
-            color: white;
-            box-shadow: 0 4px 15px rgba(94,114,228,0.4);
+        .touchpad.active {
+            background: linear-gradient(145deg, #252538, #2a2a40);
+            border-color: rgba(94,114,228,0.3);
         }
-        .spacer { visibility: hidden; }
+        .touchpad.active .touchpad-hint { opacity: 0.3; }
 
         /* Action Buttons */
         .action-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
@@ -637,17 +632,9 @@ public class WebRemoteService : IDisposable
                 <button class='bumper-btn' data-action='button' data-value='RB'>RB</button>
             </div>
 
-            <!-- D-Pad -->
-            <div class='dpad-container'>
-                <div class='spacer'></div>
-                <button class='btn dpad-btn' data-action='direction' data-value='Up'>&#9650;</button>
-                <div class='spacer'></div>
-                <button class='btn dpad-btn' data-action='direction' data-value='Left'>&#9664;</button>
-                <button class='btn center-btn' data-action='button' data-value='A'>A</button>
-                <button class='btn dpad-btn' data-action='direction' data-value='Right'>&#9654;</button>
-                <div class='spacer'></div>
-                <button class='btn dpad-btn' data-action='direction' data-value='Down'>&#9660;</button>
-                <div class='spacer'></div>
+            <!-- Touchpad -->
+            <div class='touchpad' id='touchpad'>
+                <div class='touchpad-hint'>Swipe: Move cursor<br>Tap: Click<br>2-finger: Right-click / Scroll</div>
             </div>
 
             <!-- Action Buttons -->
@@ -755,6 +742,76 @@ public class WebRemoteService : IDisposable
             };
             btn.addEventListener('touchstart', handler);
             btn.addEventListener('mousedown', handler);
+        });
+
+        // Touchpad handling
+        const touchpad = document.getElementById('touchpad');
+        const touchState = {
+            startX: 0, startY: 0,
+            lastX: 0, lastY: 0,
+            fingerCount: 0,
+            startTime: 0,
+            moved: false
+        };
+        const TAP_THRESHOLD = 15;
+        const TAP_DURATION = 300;
+        const CURSOR_SENSITIVITY = 1.5;
+        const SCROLL_SENSITIVITY = 0.8;
+
+        touchpad.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchpad.classList.add('active');
+            const touches = e.touches;
+            touchState.fingerCount = touches.length;
+            touchState.startX = touchState.lastX = touches[0].clientX;
+            touchState.startY = touchState.lastY = touches[0].clientY;
+            touchState.startTime = Date.now();
+            touchState.moved = false;
+        });
+
+        touchpad.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touches = e.touches;
+            const deltaX = (touches[0].clientX - touchState.lastX) * CURSOR_SENSITIVITY;
+            const deltaY = (touches[0].clientY - touchState.lastY) * CURSOR_SENSITIVITY;
+
+            touchState.lastX = touches[0].clientX;
+            touchState.lastY = touches[0].clientY;
+
+            if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
+                touchState.moved = true;
+
+                if (touches.length === 1) {
+                    sendCommand('mouseMove', JSON.stringify({
+                        x: Math.round(deltaX),
+                        y: Math.round(deltaY)
+                    }));
+                } else if (touches.length >= 2) {
+                    sendCommand('scroll', JSON.stringify({
+                        x: Math.round(-deltaX * SCROLL_SENSITIVITY),
+                        y: Math.round(-deltaY * SCROLL_SENSITIVITY)
+                    }));
+                }
+            }
+        });
+
+        touchpad.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            touchpad.classList.remove('active');
+
+            const duration = Date.now() - touchState.startTime;
+            const totalMove = Math.abs(touchState.lastX - touchState.startX)
+                            + Math.abs(touchState.lastY - touchState.startY);
+
+            if (duration < TAP_DURATION && totalMove < TAP_THRESHOLD && !touchState.moved) {
+                if (touchState.fingerCount === 1) {
+                    sendCommand('mouseClick', 'left');
+                } else if (touchState.fingerCount >= 2) {
+                    sendCommand('mouseClick', 'right');
+                }
+            }
+
+            touchState.fingerCount = e.touches.length;
         });
 
         connect();
