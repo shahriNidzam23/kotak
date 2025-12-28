@@ -18,6 +18,7 @@ const state = {
     pendingConfirmAction: null,
     pendingAppPath: null,
     pendingAppThumbnail: null,
+    pendingAppType: 'exe', // 'exe' or 'web'
     selectedAppName: null,
     // Controller mapping
     controllerConfig: null,
@@ -58,6 +59,7 @@ async function initializeApp() {
     setupCursorAutoHide();
     updateFocusableElements();
     loadVersion();
+    initWebRemote();
 
     if (skipSplash) {
         // Skip splash animation (returning from app via LB+RB+Start combo)
@@ -496,10 +498,10 @@ function loadVersion() {
             versionEl.textContent = versionText;
         }
 
-        // Update footer version
-        const footerVersionEl = document.getElementById('footer-version');
-        if (footerVersionEl) {
-            footerVersionEl.textContent = versionText;
+        // Update header version
+        const headerVersionEl = document.getElementById('header-version');
+        if (headerVersionEl) {
+            headerVersionEl.textContent = versionText;
         }
     } catch (e) {
         console.error('Error loading version:', e);
@@ -665,15 +667,48 @@ function cancelUpdateDownload() {
 function showAddAppDialog() {
     document.getElementById('app-name-input').value = '';
     document.getElementById('app-path-input').value = '';
+    document.getElementById('app-url-input').value = '';
     state.pendingAppPath = null;
     state.pendingAppThumbnail = null;
+    state.pendingAppType = 'exe';
+
+    // Reset type selector to exe
+    document.querySelectorAll('.app-type-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === 'exe');
+    });
+    document.getElementById('exe-path-group').classList.remove('hidden');
+    document.getElementById('web-url-group').classList.add('hidden');
+
     document.getElementById('add-app-dialog').classList.remove('hidden');
     updateFocusableElements();
 
-    // Focus the browse button first
+    // Focus the first type button
     setTimeout(() => {
-        document.getElementById('browse-btn').focus();
+        document.querySelector('.app-type-btn[data-type="exe"]').focus();
     }, 100);
+}
+
+function setAppType(type) {
+    state.pendingAppType = type;
+
+    // Update button states
+    document.querySelectorAll('.app-type-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === type);
+    });
+
+    // Show/hide appropriate input groups
+    const exeGroup = document.getElementById('exe-path-group');
+    const webGroup = document.getElementById('web-url-group');
+
+    if (type === 'exe') {
+        exeGroup.classList.remove('hidden');
+        webGroup.classList.add('hidden');
+    } else {
+        exeGroup.classList.add('hidden');
+        webGroup.classList.remove('hidden');
+    }
+
+    updateFocusableElements();
 }
 
 async function browseForExe() {
@@ -697,28 +732,56 @@ async function browseForExe() {
 
 async function confirmAddApp() {
     const name = document.getElementById('app-name-input').value.trim();
-    const path = state.pendingAppPath;
+    const type = state.pendingAppType;
 
     if (!name) {
         document.getElementById('app-name-input').focus();
         return;
     }
 
-    if (!path) {
-        document.getElementById('browse-btn').focus();
-        return;
-    }
+    if (type === 'exe') {
+        const path = state.pendingAppPath;
+        if (!path) {
+            document.getElementById('browse-btn').focus();
+            return;
+        }
 
-    if (bridge) {
-        const thumbnail = state.pendingAppThumbnail || '';
-        const success = bridge.AddApp(name, 'exe', path, thumbnail);
+        if (bridge) {
+            const thumbnail = state.pendingAppThumbnail || '';
+            const success = bridge.AddApp(name, 'exe', path, thumbnail);
 
-        if (success) {
-            hideAllDialogs();
-            await loadApps();
-            showScreen('main-screen');
-        } else {
-            showConfirmDialog('Error', 'Failed to add application. An app with this name may already exist.', null);
+            if (success) {
+                hideAllDialogs();
+                await loadApps();
+                showScreen('main-screen');
+            } else {
+                showConfirmDialog('Error', 'Failed to add application. An app with this name may already exist.', null);
+            }
+        }
+    } else {
+        // Web app
+        const url = document.getElementById('app-url-input').value.trim();
+        if (!url) {
+            document.getElementById('app-url-input').focus();
+            return;
+        }
+
+        // Basic URL validation
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            showConfirmDialog('Error', 'Please enter a valid URL starting with http:// or https://', null);
+            return;
+        }
+
+        if (bridge) {
+            const success = bridge.AddApp(name, 'web', url, '');
+
+            if (success) {
+                hideAllDialogs();
+                await loadApps();
+                showScreen('main-screen');
+            } else {
+                showConfirmDialog('Error', 'Failed to add web app. An app with this name may already exist.', null);
+            }
         }
     }
 }
@@ -834,6 +897,9 @@ function focusElement(index) {
     element.classList.add('focused');
     element.focus();
     element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Broadcast state to Web Remote
+    broadcastUIState();
 }
 
 function navigateFocus(direction) {
@@ -949,6 +1015,9 @@ function activateFocused() {
             break;
         case 'browse-exe':
             browseForExe();
+            break;
+        case 'set-app-type':
+            setAppType(element.dataset.type);
             break;
         case 'confirm-add-app':
             confirmAddApp();
@@ -1149,6 +1218,9 @@ function handleMouseClick(e) {
             break;
         case 'browse-exe':
             browseForExe();
+            break;
+        case 'set-app-type':
+            setAppType(target.dataset.type);
             break;
         case 'confirm-add-app':
             confirmAddApp();
@@ -1351,6 +1423,9 @@ function setupGamepadListener() {
                 updateProgressUI(data.phase, data.progress, data.message);
             } else if (data.type === 'updateError') {
                 showUpdateError(data.error);
+            } else if (data.type === 'remoteText') {
+                // Handle text input from Web Remote
+                handleRemoteText(data.text);
             }
         });
     } else {
@@ -2653,5 +2728,129 @@ function markChannelAsFailed(playlistId, channelId) {
         }
     } catch (error) {
         console.error('Failed to mark channel as failed:', error);
+    }
+}
+
+// ============================
+// Web Remote
+// ============================
+
+function initWebRemote() {
+    if (!bridge) return;
+
+    try {
+        const url = bridge.GetWebRemoteUrl();
+        if (url) {
+            updateQRCode(url);
+        }
+    } catch (e) {
+        console.error('Error initializing Web Remote:', e);
+    }
+}
+
+// Broadcast UI state to Web Remote clients for Mirror view
+let broadcastDebounce = null;
+function broadcastUIState() {
+    if (!bridge) return;
+
+    // Debounce broadcasts to avoid flooding
+    if (broadcastDebounce) {
+        clearTimeout(broadcastDebounce);
+    }
+
+    broadcastDebounce = setTimeout(() => {
+        try {
+            // Prepare simplified apps data for remote
+            const apps = state.apps.map(app => ({
+                name: app.name,
+                type: app.type,
+                thumbnail: app.thumbnail || null
+            }));
+
+            bridge.BroadcastUIState(
+                state.currentScreen,
+                state.currentTab || 'apps',
+                state.focusedIndex,
+                JSON.stringify(apps)
+            );
+        } catch (e) {
+            // Silently ignore broadcast errors
+        }
+    }, 50);
+}
+
+function handleRemoteText(text) {
+    // Find focused input and set value
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        activeEl.value = text;
+        // Dispatch input event to trigger any listeners
+        activeEl.dispatchEvent(new Event('input', { bubbles: true }));
+        activeEl.dispatchEvent(new Event('change', { bubbles: true }));
+        showToast('Text received from remote');
+    } else {
+        // No input focused - try to find any visible input in the active dialog
+        const visibleDialog = document.querySelector('.dialog:not(.hidden)');
+        if (visibleDialog) {
+            const input = visibleDialog.querySelector('input:not([type="hidden"]), textarea');
+            if (input) {
+                input.value = text;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                input.focus();
+                showToast('Text received from remote');
+                return;
+            }
+        }
+        showToast('No input field focused');
+    }
+}
+
+function updateQRCode(url) {
+    const canvas = document.getElementById('qr-code');
+    const urlEl = document.getElementById('qr-url');
+
+    if (!canvas || !url) return;
+
+    // Update URL text
+    if (urlEl) {
+        urlEl.textContent = url;
+    }
+
+    // Generate QR code using qrcode.min.js library
+    try {
+        const qr = QRCode.create(url, { errorCorrectionLevel: 'L' });
+        const size = 64;
+        const ctx = canvas.getContext('2d');
+        const moduleCount = qr.moduleCount;
+        const moduleSize = size / moduleCount;
+
+        // Clear canvas
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+
+        // Draw QR code
+        ctx.fillStyle = '#000000';
+        for (let row = 0; row < moduleCount; row++) {
+            for (let col = 0; col < moduleCount; col++) {
+                if (qr.modules[row][col]) {
+                    ctx.fillRect(
+                        Math.floor(col * moduleSize),
+                        Math.floor(row * moduleSize),
+                        Math.ceil(moduleSize),
+                        Math.ceil(moduleSize)
+                    );
+                }
+            }
+        }
+    } catch (e) {
+        console.error('QR code generation failed:', e);
+        // Fallback: just show URL text
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, 0, 64, 64);
+        ctx.fillStyle = '#fff';
+        ctx.font = '8px monospace';
+        ctx.fillText('QR', 24, 34);
     }
 }

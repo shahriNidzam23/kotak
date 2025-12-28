@@ -387,6 +387,22 @@ public class JsBridge
     }
 
     /// <summary>
+    /// Get the Web Remote URL for QR code display
+    /// </summary>
+    public string GetWebRemoteUrl()
+    {
+        return _mainWindow.GetWebRemoteUrl() ?? "";
+    }
+
+    /// <summary>
+    /// Broadcast UI state to Web Remote clients for Mirror view sync
+    /// </summary>
+    public void BroadcastUIState(string screen, string tab, int focusedIndex, string appsJson)
+    {
+        _mainWindow.BroadcastUIState(screen, tab, focusedIndex, appsJson);
+    }
+
+    /// <summary>
     /// Get README.md content for About screen
     /// </summary>
     public string GetReadmeContent()

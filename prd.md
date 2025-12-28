@@ -5,7 +5,7 @@
 **Product Name:** KOTAK
 **Platform:** Windows 10/11 (Mini PC connected to TV)
 **Target Users:** Anyone using a mini PC + TV, including remote or gamepad control
-**Current Version:** 1.1.1
+**Current Version:** 0.0.0
 
 ### Purpose
 

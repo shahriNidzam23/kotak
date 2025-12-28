@@ -23,10 +23,15 @@
                 Padding="16,8"
                 CornerRadius="8">
             <StackPanel>
-                <TextBlock Text="LB+RB: Alt+Tab | Hold LB+RB+Start (2s): Back"
+                <TextBlock Text="Gamepad: X or LB+RB+Start (2s) to close"
                            Foreground="White"
                            FontSize="14"
                            FontFamily="Segoe UI"/>
+                <TextBlock Text="Keyboard: X or Ctrl+Esc to close"
+                           Foreground="#CCCCCC"
+                           FontSize="12"
+                           FontFamily="Segoe UI"
+                           Margin="0,4,0,0"/>
             </StackPanel>
         </Border>
     </Grid>

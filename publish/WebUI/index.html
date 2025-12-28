@@ -219,6 +219,10 @@
                     <span>KOTAK</span>
                     <span class="version-number" id="app-version">v1.0.0</span>
                 </div>
+                <button class="settings-item about-btn focusable" data-action="about">
+                    <span class="icon">&#9432;</span>
+                    <span>About KOTAK</span>
+                </button>
             </div>
         </main>
 
@@ -380,15 +384,32 @@
         <div class="dialog-content">
             <h3>Add Application</h3>
             <div class="form-group">
+                <label>Application Type</label>
+                <div class="app-type-selector">
+                    <button class="app-type-btn focusable active" data-action="set-app-type" data-type="exe">
+                        <span class="type-icon">&#128187;</span>
+                        <span>Executable</span>
+                    </button>
+                    <button class="app-type-btn focusable" data-action="set-app-type" data-type="web">
+                        <span class="type-icon">&#127760;</span>
+                        <span>Web App</span>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
                 <label>Application Name</label>
                 <input type="text" id="app-name-input" class="focusable" placeholder="Enter app name">
             </div>
-            <div class="form-group">
+            <div class="form-group" id="exe-path-group">
                 <label>Application Path</label>
                 <div class="path-input-group">
                     <input type="text" id="app-path-input" class="focusable" placeholder="Path to executable" readonly>
                     <button id="browse-btn" class="browse-btn focusable" data-action="browse-exe">Browse</button>
                 </div>
+            </div>
+            <div class="form-group hidden" id="web-url-group">
+                <label>Website URL</label>
+                <input type="url" id="app-url-input" class="focusable" placeholder="https://example.com">
             </div>
             <div class="dialog-actions">
                 <button class="btn primary focusable" data-action="confirm-add-app">Add</button>
@@ -461,6 +482,19 @@
             <p id="iptv-error-message">Unable to play this channel. The stream may be unavailable.</p>
             <div class="dialog-actions">
                 <button class="btn focusable" data-action="close-iptv-error">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Dialog -->
+    <div id="about-dialog" class="dialog hidden">
+        <div class="dialog-content about-dialog-content">
+            <div class="about-header">
+                <h3>About KOTAK</h3>
+                <button class="about-close-btn focusable" data-action="close-about">&#10005;</button>
+            </div>
+            <div class="about-body" id="about-content">
+                Loading...
             </div>
         </div>
     </div>

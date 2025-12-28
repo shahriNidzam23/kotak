@@ -761,6 +761,10 @@ body.cursor-hidden * {
     font-weight: 600;
 }
 
+.about-btn {
+    margin-top: var(--spacing-sm);
+}
+
 /* ============================
    Dialogs
    ============================ */
@@ -853,6 +857,49 @@ body.cursor-hidden * {
     font-size: var(--font-size-md);
     cursor: pointer;
     white-space: nowrap;
+}
+
+/* App Type Selector */
+.app-type-selector {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.app-type-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-card);
+    border: 3px solid transparent;
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.app-type-btn .type-icon {
+    font-size: 1.5rem;
+}
+
+.app-type-btn:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+}
+
+.app-type-btn.active {
+    background: var(--bg-card-hover);
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.app-type-btn.focused {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(94, 114, 228, 0.3);
 }
 
 .dialog-actions {
@@ -2387,6 +2434,166 @@ body.cursor-hidden * {
 #iptv-error-message {
     color: var(--text-secondary);
     margin-bottom: var(--spacing-lg);
+}
+
+/* About Dialog */
+.about-dialog-content {
+    width: 90vw;
+    max-width: 900px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+
+.about-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border-bottom: 1px solid var(--bg-glass-border);
+}
+
+.about-header h3 {
+    margin: 0;
+    text-align: left;
+}
+
+.about-close-btn {
+    background: var(--bg-secondary);
+    border: 2px solid transparent;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: var(--font-size-lg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.about-close-btn:hover,
+.about-close-btn.focused {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--accent);
+}
+
+.about-body {
+    flex: 1;
+    padding: var(--spacing-xl);
+    overflow-y: auto;
+    font-size: var(--font-size-md);
+    line-height: 1.6;
+}
+
+.about-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.about-body::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.about-body::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+}
+
+/* Markdown styling in about dialog */
+.about-body h1 {
+    font-size: var(--font-size-xl);
+    color: var(--accent);
+    margin: 0 0 var(--spacing-lg) 0;
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid var(--accent);
+}
+
+.about-body h2 {
+    font-size: var(--font-size-lg);
+    color: var(--text-primary);
+    margin: var(--spacing-xl) 0 var(--spacing-md) 0;
+}
+
+.about-body h3 {
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    margin: var(--spacing-lg) 0 var(--spacing-sm) 0;
+}
+
+.about-body p {
+    margin: var(--spacing-sm) 0;
+    text-align: left;
+    color: var(--text-primary);
+}
+
+.about-body ul, .about-body ol {
+    margin: var(--spacing-sm) 0;
+    padding-left: var(--spacing-xl);
+}
+
+.about-body li {
+    margin: var(--spacing-xs) 0;
+}
+
+.about-body code {
+    background: var(--bg-secondary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.about-body pre {
+    background: var(--bg-secondary);
+    padding: var(--spacing-md);
+    border-radius: var(--tile-radius);
+    overflow-x: auto;
+    margin: var(--spacing-md) 0;
+}
+
+.about-body pre code {
+    background: none;
+    padding: 0;
+}
+
+.about-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: var(--spacing-md) 0;
+}
+
+.about-body th, .about-body td {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--bg-glass-border);
+    text-align: left;
+}
+
+.about-body th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+}
+
+.about-body strong {
+    color: var(--accent);
+}
+
+.about-body a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.about-body a:hover {
+    text-decoration: underline;
+}
+
+.about-body hr {
+    border: none;
+    border-top: 1px solid var(--bg-glass-border);
+    margin: var(--spacing-lg) 0;
 }
 
 /* IPTV Loading State */

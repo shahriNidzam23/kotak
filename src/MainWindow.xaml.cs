@@ -51,8 +51,9 @@ public partial class MainWindow : Window
     private const int SW_SHOW = 5;
 
     private JsBridge? _jsBridge;
-    private RawInputGamepadService? _gamepadService; // Changed to DirectInput-compatible service
+    private GamepadManager? _gamepadManager;
     private AppConfigService? _configService;
+    private WebRemoteService? _webRemoteService;
 
     // Window handle for Win32 operations
     private IntPtr _mainWindowHandle = IntPtr.Zero;
@@ -108,6 +109,7 @@ public partial class MainWindow : Window
 
         await InitializeWebView();
         StartGamepadPolling();
+        StartWebRemote();
     }
 
     private async Task InitializeWebView()
@@ -206,26 +208,57 @@ public partial class MainWindow : Window
 
     private void StartGamepadPolling()
     {
-        // Use RawInputGamepadService for DirectInput compatibility (Fantech, generic gamepads)
-        // Pass controller config for button mapping
+        // Use GamepadManager for multi-controller support (Xbox, PlayStation, Generic)
+        _gamepadManager = new GamepadManager();
+        _gamepadManager.OnButtonPressed += GamepadService_OnButtonPressed;
+        _gamepadManager.OnDirectionChanged += GamepadService_OnDirectionChanged;
+        _gamepadManager.OnCloseComboHeld += GamepadService_OnCloseComboHeld;
+        _gamepadManager.OnAltTabRequested += GamepadService_OnAltTabRequested;
+        _gamepadManager.OnRawButtonPressed += GamepadService_OnRawButtonPressed;
+        _gamepadManager.OnConnectionChanged += GamepadManager_OnConnectionChanged;
+
+        // Apply initial controller config
         var controllerConfig = _configService?.GetControllerConfig();
-        _gamepadService = new RawInputGamepadService(controllerConfig);
-        _gamepadService.OnButtonPressed += GamepadService_OnButtonPressed;
-        _gamepadService.OnDirectionChanged += GamepadService_OnDirectionChanged;
-        _gamepadService.OnCloseComboHeld += GamepadService_OnCloseComboHeld;
-        _gamepadService.OnRawButtonPressed += GamepadService_OnRawButtonPressed;
-        _gamepadService.StartPolling();
+        if (controllerConfig != null)
+        {
+            _gamepadManager.UpdateButtonMapping(controllerConfig);
+        }
+
+        _gamepadManager.StartPolling();
 
         // Subscribe to config changes to update button mapping
         if (_configService != null)
         {
             _configService.OnControllerConfigChanged += config =>
             {
-                _gamepadService?.UpdateButtonMapping(config);
+                _gamepadManager?.UpdateButtonMapping(config);
             };
         }
 
-        System.Diagnostics.Debug.WriteLine($"Gamepad service started. Connected: {_gamepadService.IsConnected}");
+        System.Diagnostics.Debug.WriteLine($"GamepadManager started. Connected: {_gamepadManager.IsConnected}, Type: {_gamepadManager.ActiveControllerType}");
+    }
+
+    private void GamepadManager_OnConnectionChanged(bool isConnected, GamepadType controllerType)
+    {
+        System.Diagnostics.Debug.WriteLine($"Controller connection changed: {isConnected}, Type: {controllerType}");
+
+        // Notify UI about controller connection changes
+        Dispatcher.Invoke(() =>
+        {
+            var message = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                type = "controllerConnection",
+                isConnected,
+                controllerType = controllerType.ToString()
+            });
+            webView.CoreWebView2?.PostWebMessageAsString(message);
+        });
+    }
+
+    private void GamepadService_OnAltTabRequested()
+    {
+        // Alt+Tab to switch windows (LB+RB quick tap)
+        System.Diagnostics.Debug.WriteLine("Alt+Tab requested");
     }
 
     // Navigation methods for embedded web apps
@@ -253,7 +286,7 @@ public partial class MainWindow : Window
         if (currentUrl.StartsWith("https://kotakui.local/"))
         {
             // Reset gamepad navigation state to allow immediate response
-            _gamepadService?.ResetNavigationState();
+            _gamepadManager?.ResetNavigationState();
 
             // Restore focus to enable gamepad navigation
             Dispatcher.BeginInvoke(new Action(() =>
@@ -634,8 +667,117 @@ public partial class MainWindow : Window
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        _gamepadService?.StopPolling();
-        _gamepadService?.Dispose();
+        _gamepadManager?.StopPolling();
+        _gamepadManager?.Dispose();
+        _webRemoteService?.Stop();
+        _webRemoteService?.Dispose();
+    }
+
+    // ============================
+    // Web Remote Control
+    // ============================
+
+    private void StartWebRemote()
+    {
+        _webRemoteService = new WebRemoteService();
+        _webRemoteService.OnCommand += WebRemoteService_OnCommand;
+        _webRemoteService.Start();
+
+        System.Diagnostics.Debug.WriteLine($"[WebRemote] URL: {_webRemoteService.RemoteUrl}");
+    }
+
+    public string? GetWebRemoteUrl()
+    {
+        return _webRemoteService?.RemoteUrl;
+    }
+
+    /// <summary>
+    /// Broadcast UI state to all connected Web Remote clients (called from JS)
+    /// </summary>
+    public void BroadcastUIState(string screen, string tab, int focusedIndex, string appsJson)
+    {
+        try
+        {
+            var apps = JsonSerializer.Deserialize<object[]>(appsJson) ?? Array.Empty<object>();
+            var state = new
+            {
+                type = "state",
+                screen,
+                tab,
+                focusedIndex,
+                apps
+            };
+            _webRemoteService?.BroadcastState(state);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[WebRemote] BroadcastUIState error: {ex.Message}");
+        }
+    }
+
+    private void WebRemoteService_OnCommand(string action, string value)
+    {
+        // Handle commands from Web Remote on UI thread
+        Dispatcher.Invoke(() =>
+        {
+            // Only process inputs when Kotak is in foreground (or always for remote)
+            switch (action)
+            {
+                case "button":
+                    if (Enum.TryParse<GamepadButton>(value, out var button))
+                    {
+                        if (_isWebAppActive)
+                        {
+                            HandleWebAppGamepadButton(button);
+                        }
+                        else
+                        {
+                            var message = System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                type = "gamepad",
+                                action = "button",
+                                button = button.ToString()
+                            });
+                            webView.CoreWebView2?.PostWebMessageAsString(message);
+                        }
+                    }
+                    break;
+
+                case "direction":
+                    if (Enum.TryParse<GamepadDirection>(value, out var direction))
+                    {
+                        if (_isWebAppActive)
+                        {
+                            HandleWebAppGamepadDirection(direction);
+                        }
+                        else
+                        {
+                            var message = System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                type = "gamepad",
+                                action = "direction",
+                                direction = direction.ToString()
+                            });
+                            webView.CoreWebView2?.PostWebMessageAsString(message);
+                        }
+                    }
+                    break;
+
+                case "ping":
+                    // Just a connection check, no action needed
+                    break;
+
+                case "text":
+                    // Send text from remote to WebView to type into focused input
+                    var textMsg = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        type = "remoteText",
+                        text = value
+                    });
+                    webView.CoreWebView2?.PostWebMessageAsString(textMsg);
+                    break;
+            }
+        });
     }
 
     // ============================
@@ -644,7 +786,12 @@ public partial class MainWindow : Window
 
     public bool IsGamepadConnected()
     {
-        return _gamepadService?.IsConnected ?? false;
+        return _gamepadManager?.IsConnected ?? false;
+    }
+
+    public string GetGamepadType()
+    {
+        return _gamepadManager?.ActiveControllerType.ToString() ?? "None";
     }
 
     public void StartControllerMappingMode()

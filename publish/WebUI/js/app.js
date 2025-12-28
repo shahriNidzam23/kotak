@@ -18,6 +18,7 @@ const state = {
     pendingConfirmAction: null,
     pendingAppPath: null,
     pendingAppThumbnail: null,
+    pendingAppType: 'exe', // 'exe' or 'web'
     selectedAppName: null,
     // Controller mapping
     controllerConfig: null,
@@ -244,6 +245,88 @@ function hideAllDialogs() {
     if (state.isMappingMode) {
         cancelControllerMapping();
     }
+}
+
+// ============================
+// About Dialog
+// ============================
+function showAboutDialog() {
+    if (!bridge) return;
+
+    try {
+        const markdown = bridge.GetReadmeContent();
+        const html = markdownToHtml(markdown);
+        document.getElementById('about-content').innerHTML = html;
+        document.getElementById('about-dialog').classList.remove('hidden');
+        updateFocusableElements();
+    } catch (e) {
+        console.error('Error loading README:', e);
+    }
+}
+
+function hideAboutDialog() {
+    document.getElementById('about-dialog').classList.add('hidden');
+    updateFocusableElements();
+}
+
+// Simple markdown to HTML converter
+function markdownToHtml(markdown) {
+    if (!markdown) return '';
+
+    let html = markdown
+        // Escape HTML
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+
+        // Code blocks (must be before inline code)
+        .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+
+        // Inline code
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+
+        // Headers
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+
+        // Bold and italic
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+
+        // Links
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+
+        // Horizontal rules
+        .replace(/^---$/gm, '<hr>')
+
+        // Unordered lists
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+
+        // Ordered lists
+        .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+
+        // Tables (simple support)
+        .replace(/^\|(.+)\|$/gm, (match, content) => {
+            const cells = content.split('|').map(c => c.trim());
+            if (cells.every(c => /^[-:]+$/.test(c))) {
+                return ''; // Skip separator row
+            }
+            const isHeader = cells.some(c => c.includes('---'));
+            const tag = isHeader ? 'th' : 'td';
+            return '<tr>' + cells.map(c => `<${tag}>${c}</${tag}>`).join('') + '</tr>';
+        })
+        .replace(/(<tr>.*<\/tr>\n?)+/g, '<table>$&</table>')
+
+        // Paragraphs (lines that aren't already wrapped)
+        .replace(/^(?!<[a-z]|$)(.+)$/gm, '<p>$1</p>')
+
+        // Clean up empty paragraphs and extra whitespace
+        .replace(/<p><\/p>/g, '')
+        .replace(/\n{3,}/g, '\n\n');
+
+    return html;
 }
 
 // ============================
@@ -583,15 +666,48 @@ function cancelUpdateDownload() {
 function showAddAppDialog() {
     document.getElementById('app-name-input').value = '';
     document.getElementById('app-path-input').value = '';
+    document.getElementById('app-url-input').value = '';
     state.pendingAppPath = null;
     state.pendingAppThumbnail = null;
+    state.pendingAppType = 'exe';
+
+    // Reset type selector to exe
+    document.querySelectorAll('.app-type-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === 'exe');
+    });
+    document.getElementById('exe-path-group').classList.remove('hidden');
+    document.getElementById('web-url-group').classList.add('hidden');
+
     document.getElementById('add-app-dialog').classList.remove('hidden');
     updateFocusableElements();
 
-    // Focus the browse button first
+    // Focus the first type button
     setTimeout(() => {
-        document.getElementById('browse-btn').focus();
+        document.querySelector('.app-type-btn[data-type="exe"]').focus();
     }, 100);
+}
+
+function setAppType(type) {
+    state.pendingAppType = type;
+
+    // Update button states
+    document.querySelectorAll('.app-type-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === type);
+    });
+
+    // Show/hide appropriate input groups
+    const exeGroup = document.getElementById('exe-path-group');
+    const webGroup = document.getElementById('web-url-group');
+
+    if (type === 'exe') {
+        exeGroup.classList.remove('hidden');
+        webGroup.classList.add('hidden');
+    } else {
+        exeGroup.classList.add('hidden');
+        webGroup.classList.remove('hidden');
+    }
+
+    updateFocusableElements();
 }
 
 async function browseForExe() {
@@ -615,28 +731,56 @@ async function browseForExe() {
 
 async function confirmAddApp() {
     const name = document.getElementById('app-name-input').value.trim();
-    const path = state.pendingAppPath;
+    const type = state.pendingAppType;
 
     if (!name) {
         document.getElementById('app-name-input').focus();
         return;
     }
 
-    if (!path) {
-        document.getElementById('browse-btn').focus();
-        return;
-    }
+    if (type === 'exe') {
+        const path = state.pendingAppPath;
+        if (!path) {
+            document.getElementById('browse-btn').focus();
+            return;
+        }
 
-    if (bridge) {
-        const thumbnail = state.pendingAppThumbnail || '';
-        const success = bridge.AddApp(name, 'exe', path, thumbnail);
+        if (bridge) {
+            const thumbnail = state.pendingAppThumbnail || '';
+            const success = bridge.AddApp(name, 'exe', path, thumbnail);
 
-        if (success) {
-            hideAllDialogs();
-            await loadApps();
-            showScreen('main-screen');
-        } else {
-            showConfirmDialog('Error', 'Failed to add application. An app with this name may already exist.', null);
+            if (success) {
+                hideAllDialogs();
+                await loadApps();
+                showScreen('main-screen');
+            } else {
+                showConfirmDialog('Error', 'Failed to add application. An app with this name may already exist.', null);
+            }
+        }
+    } else {
+        // Web app
+        const url = document.getElementById('app-url-input').value.trim();
+        if (!url) {
+            document.getElementById('app-url-input').focus();
+            return;
+        }
+
+        // Basic URL validation
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            showConfirmDialog('Error', 'Please enter a valid URL starting with http:// or https://', null);
+            return;
+        }
+
+        if (bridge) {
+            const success = bridge.AddApp(name, 'web', url, '');
+
+            if (success) {
+                hideAllDialogs();
+                await loadApps();
+                showScreen('main-screen');
+            } else {
+                showConfirmDialog('Error', 'Failed to add web app. An app with this name may already exist.', null);
+            }
         }
     }
 }
@@ -868,6 +1012,9 @@ function activateFocused() {
         case 'browse-exe':
             browseForExe();
             break;
+        case 'set-app-type':
+            setAppType(element.dataset.type);
+            break;
         case 'confirm-add-app':
             confirmAddApp();
             break;
@@ -896,6 +1043,12 @@ function activateFocused() {
             break;
         case 'cancel-update':
             cancelUpdateDownload();
+            break;
+        case 'about':
+            showAboutDialog();
+            break;
+        case 'close-about':
+            hideAboutDialog();
             break;
         case 'confirm-yes':
             handleConfirmYes();
@@ -1062,6 +1215,9 @@ function handleMouseClick(e) {
         case 'browse-exe':
             browseForExe();
             break;
+        case 'set-app-type':
+            setAppType(target.dataset.type);
+            break;
         case 'confirm-add-app':
             confirmAddApp();
             break;
@@ -1090,6 +1246,12 @@ function handleMouseClick(e) {
             break;
         case 'cancel-update':
             cancelUpdateDownload();
+            break;
+        case 'about':
+            showAboutDialog();
+            break;
+        case 'close-about':
+            hideAboutDialog();
             break;
         case 'confirm-yes':
             handleConfirmYes();
