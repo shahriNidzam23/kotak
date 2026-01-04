@@ -10,13 +10,16 @@ A fullscreen, TV-friendly launcher for Windows 10/11. Built with WPF (.NET 8) an
 
 ## Features
 
-- **Gamepad Support** - Full XInput controller navigation (Xbox, Fantech, etc.)
+- **Gamepad Support** - Full controller navigation (Xbox via XInput, PlayStation via HID)
+- **DualShock 4 / DualSense** - Touchpad mouse control (swipe to move, tap to click)
 - **App Launcher** - Launch web apps and native EXE applications
 - **Dynamic App Management** - Add/remove apps without rebuilding
 - **IPTV Support** - Add M3U/M3U8 playlists to watch live TV channels
 - **Wi-Fi Management** - Scan and connect to networks
 - **System Controls** - Shutdown, restart, sleep, volume from the launcher
 - **Utilities** - File explorer, file transfer, browser, Tailscale VPN
+- **Web Remote** - Control KOTAK from your phone via QR code
+- **Smart App Launch** - Refocuses already running apps instead of duplicating
 
 ## Requirements
 
@@ -49,22 +52,24 @@ kotak.bat clean     # Clean build outputs
 |--------|--------|
 | D-pad / Left Stick | Navigate |
 | Right Stick | Mouse cursor control |
-| A | Select / Mouse click (after using right stick) |
-| B | Back |
-| Y | Add App / Add IPTV Playlist |
-| X | Remove App (on tile) |
-| LB / RB | Switch tabs |
-| Start | Settings Menu |
+| Touchpad (PlayStation) | Mouse cursor (swipe), click (tap) |
+| A / Cross | Select / Mouse click (after using right stick/touchpad) |
+| B / Circle | Back |
+| Y / Triangle | Add App / Add IPTV Playlist |
+| X / Square | Remove App (on tile) |
+| LB / L1 / RB / R1 | Switch tabs |
+| Start / Options | Settings Menu |
 
 ### Gamepad - Web Apps
 | Button | Action |
 |--------|--------|
 | D-pad / Left Stick | Scroll page |
 | Right Stick | Mouse cursor control |
-| A | Click / Mouse click (after using right stick) |
-| B | Browser Back |
-| X | Close web app (return to launcher) |
-| LB + RB + Start | Close web app (return to launcher) |
+| Touchpad (PlayStation) | Mouse cursor (swipe), click (tap) |
+| A / Cross | Click / Mouse click (after using right stick/touchpad) |
+| B / Circle | Browser Back |
+| X / Square | Close web app (return to launcher) |
+| LB + RB + Start / L1 + R1 + Options | Close web app (return to launcher) |
 
 ### Keyboard - KOTAK Launcher
 | Key | Action |
@@ -153,7 +158,10 @@ kotak/
 │   │   ├── AppConfigService.cs
 │   │   ├── AppLauncherService.cs
 │   │   ├── IptvService.cs
-│   │   ├── RawInputGamepadService.cs
+│   │   ├── GamepadManager.cs
+│   │   ├── XInputGamepadService.cs
+│   │   ├── DirectInputGamepadService.cs
+│   │   ├── DS4HidService.cs
 │   │   ├── WifiService.cs
 │   │   └── SystemService.cs
 │   ├── Bridge/
@@ -229,7 +237,8 @@ Install the [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-e
 
 ### Gamepad not working
 - Ensure controller is connected before launching
-- Controller Settings allows remapping buttons
+- Controller Settings allows remapping buttons (Xbox/generic)
+- DualShock 4 / DualSense controllers work via USB or Bluetooth
 - Check Device Manager for driver issues
 
 ### Wi-Fi not showing

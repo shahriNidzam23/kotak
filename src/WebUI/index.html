@@ -179,6 +179,22 @@
                     <span>Exit Launcher</span>
                 </button>
                 <div class="settings-divider"></div>
+                <!-- Web Remote -->
+                <div class="settings-remote" id="settings-remote">
+                    <div class="remote-header">
+                        <span class="icon">&#128241;</span>
+                        <span>Web Remote</span>
+                    </div>
+                    <div class="remote-content">
+                        <canvas id="qr-code" width="100" height="100"></canvas>
+                        <div class="remote-info">
+                            <p>Scan QR code or visit:</p>
+                            <div class="remote-url" id="qr-url"></div>
+                            <p class="remote-hint">Control KOTAK from your phone</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-divider"></div>
                 <div class="settings-update" id="update-section">
                     <div class="update-status" id="update-status">
                         <span class="icon">&#8635;</span>
@@ -236,11 +252,6 @@
                 <span class="hint"><kbd>X</kbd><span class="separator">/</span><kbd class="keyboard">Del</kbd> Delete</span>
                 <span class="hint"><kbd>Y</kbd> Add App</span>
                 <span class="hint"><kbd>LB</kbd> <span class="tab-arrow">&#9664;</span> Tab <span class="tab-arrow">&#9654;</span> <kbd>RB</kbd></span>
-            </div>
-            <div class="footer-qr" id="footer-qr">
-                <div class="qr-label">Web Remote</div>
-                <canvas id="qr-code" width="64" height="64"></canvas>
-                <div class="qr-url" id="qr-url"></div>
             </div>
         </footer>
     </div>
@@ -390,6 +401,11 @@
     <div id="add-app-dialog" class="dialog hidden">
         <div class="dialog-content">
             <h3>Add Application</h3>
+            <!-- Loading Overlay -->
+            <div id="add-app-loading" class="dialog-loading hidden">
+                <span class="loading-spinner"></span>
+                <span id="add-app-loading-text">Adding application...</span>
+            </div>
             <div class="form-group">
                 <label>Application Type</label>
                 <div class="app-type-selector">

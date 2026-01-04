@@ -4,11 +4,12 @@ using Kotak.Models;
 namespace Kotak.Services;
 
 /// <summary>
-/// Unified gamepad manager that coordinates XInput and DirectInput services.
-/// Priority: XInput (Xbox) > DirectInput (PlayStation, Generic)
+/// Unified gamepad manager that coordinates XInput, DS4 HID, and DirectInput services.
+/// Priority: DS4 HID (PlayStation) > XInput (Xbox) > DirectInput (Generic)
 /// </summary>
 public class GamepadManager : IDisposable
 {
+    private DS4HidService? _ds4HidService;
     private XInputGamepadService? _xinputService;
     private DirectInputGamepadService? _directInputService;
     private IGamepadService? _activeService;
@@ -116,7 +117,23 @@ public class GamepadManager : IDisposable
         var previousType = ActiveControllerType;
         var wasConnected = IsConnected;
 
-        // Try XInput first (Xbox controllers)
+        // Try DS4 HID first (PlayStation controllers with touchpad support)
+        if (_ds4HidService == null)
+        {
+            _ds4HidService = new DS4HidService();
+        }
+
+        if (_ds4HidService.TryConnect())
+        {
+            if (_activeService != _ds4HidService)
+            {
+                SwitchToService(_ds4HidService);
+                Debug.WriteLine("[GamepadManager] Connected to PlayStation controller via HID (touchpad enabled)");
+            }
+            return;
+        }
+
+        // Try XInput (Xbox controllers)
         if (_xinputService == null)
         {
             _xinputService = new XInputGamepadService();
@@ -132,10 +149,10 @@ public class GamepadManager : IDisposable
             return;
         }
 
-        // Fall back to DirectInput (PlayStation, Generic)
+        // Fall back to DirectInput (Generic controllers)
         if (_directInputService == null)
         {
-            // Skip XInput devices since we already checked XInput
+            // Skip XInput and PlayStation devices since we already checked them
             _directInputService = new DirectInputGamepadService(skipXInputDevices: true);
         }
 
@@ -145,7 +162,7 @@ public class GamepadManager : IDisposable
             {
                 SwitchToService(_directInputService);
                 var typeStr = _directInputService.ControllerType == GamepadType.PlayStation
-                    ? "PlayStation" : "Generic DirectInput";
+                    ? "PlayStation (DirectInput fallback)" : "Generic DirectInput";
                 Debug.WriteLine($"[GamepadManager] Connected to {typeStr} controller");
             }
             return;
@@ -257,9 +274,11 @@ public class GamepadManager : IDisposable
 
         StopPolling();
 
+        _ds4HidService?.Dispose();
         _xinputService?.Dispose();
         _directInputService?.Dispose();
 
+        _ds4HidService = null;
         _xinputService = null;
         _directInputService = null;
         _activeService = null;

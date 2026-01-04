@@ -413,38 +413,6 @@ body.cursor-hidden * {
     border: 1px solid var(--bg-glass-border);
 }
 
-.footer-qr {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background: var(--bg-card);
-    border-radius: 8px;
-    border: 1px solid var(--bg-glass-border);
-}
-
-.footer-qr .qr-label {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    transform: rotate(180deg);
-}
-
-.footer-qr #qr-code {
-    border-radius: 4px;
-    background: white;
-    padding: 2px;
-}
-
-.footer-qr .qr-url {
-    font-size: 10px;
-    color: var(--text-secondary);
-    max-width: 80px;
-    word-break: break-all;
-    line-height: 1.2;
-}
-
 .hint .tab-arrow {
     color: var(--accent);
     font-size: 0.9em;
@@ -618,6 +586,66 @@ body.cursor-hidden * {
     height: 2px;
     background: var(--bg-secondary);
     margin: var(--spacing-sm) 0;
+}
+
+/* Web Remote Section */
+.settings-remote {
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-glass);
+    border-radius: var(--tile-radius);
+    margin: var(--spacing-sm) 0;
+}
+
+.settings-remote .remote-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary);
+}
+
+.settings-remote .remote-header .icon {
+    font-size: var(--font-size-xl);
+}
+
+.settings-remote .remote-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.settings-remote #qr-code {
+    border-radius: 8px;
+    background: white;
+    padding: 6px;
+    flex-shrink: 0;
+}
+
+.settings-remote .remote-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.settings-remote .remote-info p {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.settings-remote .remote-url {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    color: var(--accent);
+    word-break: break-all;
+}
+
+.settings-remote .remote-hint {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    margin-top: var(--spacing-xs);
 }
 
 /* Update Section */
@@ -2660,6 +2688,37 @@ body.cursor-hidden * {
 }
 
 .iptv-loading p {
+    font-size: var(--font-size-md);
+    color: var(--text-secondary);
+}
+
+/* Dialog Loading Overlay */
+.dialog-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    background: var(--bg-glass);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--bg-glass-border);
+}
+
+.dialog-loading.hidden {
+    display: none;
+}
+
+.loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--bg-secondary);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.dialog-loading span:last-child {
     font-size: var(--font-size-md);
     color: var(--text-secondary);
 }

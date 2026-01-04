@@ -679,6 +679,9 @@ function showAddAppDialog() {
     document.getElementById('exe-path-group').classList.remove('hidden');
     document.getElementById('web-url-group').classList.add('hidden');
 
+    // Hide loading state
+    hideAddAppLoading();
+
     document.getElementById('add-app-dialog').classList.remove('hidden');
     updateFocusableElements();
 
@@ -711,21 +714,54 @@ function setAppType(type) {
     updateFocusableElements();
 }
 
+function showAddAppLoading(message = 'Adding application...') {
+    const loading = document.getElementById('add-app-loading');
+    const loadingText = document.getElementById('add-app-loading-text');
+    if (loading) {
+        loadingText.textContent = message;
+        loading.classList.remove('hidden');
+    }
+    // Disable dialog buttons
+    document.querySelectorAll('#add-app-dialog .btn, #add-app-dialog .browse-btn, #add-app-dialog .app-type-btn').forEach(btn => {
+        btn.disabled = true;
+    });
+}
+
+function hideAddAppLoading() {
+    const loading = document.getElementById('add-app-loading');
+    if (loading) {
+        loading.classList.add('hidden');
+    }
+    // Re-enable dialog buttons
+    document.querySelectorAll('#add-app-dialog .btn, #add-app-dialog .browse-btn, #add-app-dialog .app-type-btn').forEach(btn => {
+        btn.disabled = false;
+    });
+}
+
 async function browseForExe() {
     if (bridge) {
-        const resultJson = bridge.BrowseForExe();
-        const result = JSON.parse(resultJson);
+        showAddAppLoading('Opening file browser...');
 
-        if (result.path) {
-            state.pendingAppPath = result.path;
-            state.pendingAppThumbnail = result.thumbnail;
-            document.getElementById('app-path-input').value = result.path;
+        // Use setTimeout to allow UI to update before blocking call
+        await new Promise(resolve => setTimeout(resolve, 50));
 
-            // Auto-fill name if empty
-            const nameInput = document.getElementById('app-name-input');
-            if (!nameInput.value && result.suggestedName) {
-                nameInput.value = result.suggestedName;
+        try {
+            const resultJson = bridge.BrowseForExe();
+            const result = JSON.parse(resultJson);
+
+            if (result.path) {
+                state.pendingAppPath = result.path;
+                state.pendingAppThumbnail = result.thumbnail;
+                document.getElementById('app-path-input').value = result.path;
+
+                // Auto-fill name if empty
+                const nameInput = document.getElementById('app-name-input');
+                if (!nameInput.value && result.suggestedName) {
+                    nameInput.value = result.suggestedName;
+                }
             }
+        } finally {
+            hideAddAppLoading();
         }
     }
 }
@@ -747,15 +783,24 @@ async function confirmAddApp() {
         }
 
         if (bridge) {
-            const thumbnail = state.pendingAppThumbnail || '';
-            const success = bridge.AddApp(name, 'exe', path, thumbnail);
+            showAddAppLoading('Adding executable...');
+            await new Promise(resolve => setTimeout(resolve, 50));
 
-            if (success) {
-                hideAllDialogs();
-                await loadApps();
-                showScreen('main-screen');
-            } else {
-                showConfirmDialog('Error', 'Failed to add application. An app with this name may already exist.', null);
+            try {
+                const thumbnail = state.pendingAppThumbnail || '';
+                const success = bridge.AddApp(name, 'exe', path, thumbnail);
+
+                if (success) {
+                    hideAllDialogs();
+                    await loadApps();
+                    showScreen('main-screen');
+                } else {
+                    hideAddAppLoading();
+                    showConfirmDialog('Error', 'Failed to add application. An app with this name may already exist.', null);
+                }
+            } catch (e) {
+                hideAddAppLoading();
+                showConfirmDialog('Error', 'Failed to add application.', null);
             }
         }
     } else {
@@ -773,14 +818,23 @@ async function confirmAddApp() {
         }
 
         if (bridge) {
-            const success = bridge.AddApp(name, 'web', url, '');
+            showAddAppLoading('Adding web app...');
+            await new Promise(resolve => setTimeout(resolve, 50));
 
-            if (success) {
-                hideAllDialogs();
-                await loadApps();
-                showScreen('main-screen');
-            } else {
-                showConfirmDialog('Error', 'Failed to add web app. An app with this name may already exist.', null);
+            try {
+                const success = bridge.AddApp(name, 'web', url, '');
+
+                if (success) {
+                    hideAllDialogs();
+                    await loadApps();
+                    showScreen('main-screen');
+                } else {
+                    hideAddAppLoading();
+                    showConfirmDialog('Error', 'Failed to add web app. An app with this name may already exist.', null);
+                }
+            } catch (e) {
+                hideAddAppLoading();
+                showConfirmDialog('Error', 'Failed to add web app.', null);
             }
         }
     }
@@ -2820,7 +2874,7 @@ function updateQRCode(url) {
     // Generate QR code using qrcode.min.js library
     try {
         const qr = QRCode.create(url, { errorCorrectionLevel: 'L' });
-        const size = 64;
+        const size = canvas.width || 100;
         const ctx = canvas.getContext('2d');
         const moduleCount = qr.moduleCount;
         const moduleSize = size / moduleCount;
@@ -2847,10 +2901,11 @@ function updateQRCode(url) {
         console.error('QR code generation failed:', e);
         // Fallback: just show URL text
         const ctx = canvas.getContext('2d');
+        const size = canvas.width || 100;
         ctx.fillStyle = '#333';
-        ctx.fillRect(0, 0, 64, 64);
+        ctx.fillRect(0, 0, size, size);
         ctx.fillStyle = '#fff';
-        ctx.font = '8px monospace';
-        ctx.fillText('QR', 24, 34);
+        ctx.font = '10px monospace';
+        ctx.fillText('QR', size/2 - 8, size/2 + 4);
     }
 }

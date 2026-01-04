@@ -114,8 +114,22 @@ public class JsBridge
             }
             else
             {
-                // EXE apps: Launch externally as before
+                // EXE apps: Check if already running first
+                var registeredApps = _configService.GetApps();
+                var runningApps = _processManagerService.GetRunningApps(registeredApps);
+                var runningApp = runningApps.FirstOrDefault(r =>
+                    r.AppName.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+                if (runningApp != null && runningApp.HasWindow)
+                {
+                    // App is already running - focus it instead
+                    var focused = _processManagerService.FocusProcess(runningApp.ProcessId);
+                    return JsonSerializer.Serialize(new { success = focused, action = "focused" });
+                }
+
+                // App not running - launch it
                 _launcherService.Launch(app);
+                return JsonSerializer.Serialize(new { success = true, action = "launched" });
             }
             return JsonSerializer.Serialize(new { success = true });
         }

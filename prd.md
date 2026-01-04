@@ -5,7 +5,7 @@
 **Product Name:** KOTAK
 **Platform:** Windows 10/11 (Mini PC connected to TV)
 **Target Users:** Anyone using a mini PC + TV, including remote or gamepad control
-**Current Version:** 0.0.0
+**Current Version:** 0.0.1
 
 ### Purpose
 
@@ -53,7 +53,7 @@ Create a **fullscreen, TV-friendly launcher** built with **WPF (.NET 8) and WebV
 | **Add Apps Dynamically** | Done   | Browse any folder, select any EXE, automatically add it to grid.                                |
 | **Shutdown/Restart/Sleep** | Done | Access to turn off, restart, or sleep the mini PC from Settings tab.                           |
 | **Wi-Fi Connectivity**   | Done   | Scan for networks and connect to Wi-Fi directly from launcher.                                  |
-| **Gamepad Support**      | Done   | Full navigation via XInput-compatible controllers. Remappable buttons. Web app scroll/click. Right stick mouse control.    |
+| **Gamepad Support**      | Done   | Full navigation via XInput (Xbox) and DualShock 4/DualSense (PlayStation) controllers. Remappable buttons. Web app scroll/click. Right stick mouse control. Touchpad mouse control (PlayStation).    |
 | **Volume Control**       | Done   | Adjust system volume from Settings tab.                                                         |
 | **Controller Remapping** | Done   | Customize gamepad button mappings via Settings.                                                 |
 | **Update Checker**       | Done   | Check for updates from GitHub releases.                                                         |
@@ -65,6 +65,9 @@ Create a **fullscreen, TV-friendly launcher** built with **WPF (.NET 8) and WebV
 | **Browser Utility**      | Done   | Launch Microsoft Edge browser from Utilities tab.                                               |
 | **Tailscale VPN**        | Done   | Turn on Tailscale VPN from Utilities tab.                                                       |
 | **Failed Channel Tracking** | Done | Automatically mark channels that fail to play and display them as disabled.                   |
+| **App Refocus**          | Done   | Detect if an app is already running and refocus it instead of launching a duplicate.           |
+| **Web Remote Control**   | Done   | Control KOTAK from your phone via QR code in Settings. Web-based remote with touchpad.         |
+| **Add App Loading UI**   | Done   | Loading spinner when browsing for executables and adding apps.                                  |
 
 ### Planned Features (TODO)
 
@@ -154,7 +157,8 @@ Example:
 |---------|----------|--------|
 | D-pad / Left Stick | Arrow Keys | Navigate / Scroll (in web apps) |
 | Right Stick | - | Mouse cursor control |
-| A | Enter | Select / Mouse click (when using right stick) |
+| Touchpad (PlayStation) | - | Mouse cursor control (swipe), click (tap) |
+| A / Cross | Enter | Select / Mouse click (when using right stick/touchpad) |
 | B | Escape | Back / Browser Back (in web apps) |
 | X | Delete / X | Remove App / Close web app |
 | Y | Y | Add App / Add IPTV Playlist |
@@ -192,7 +196,7 @@ kotak/
 │   ├── App.xaml
 │   ├── MainWindow.xaml
 │   ├── Models/           # AppConfig, IptvModels, WifiNetwork
-│   ├── Services/         # AppConfig, Launcher, Gamepad, Wifi, System, Update, IPTV
+│   ├── Services/         # AppConfig, Launcher, Gamepad (XInput, DirectInput, DS4 HID), Wifi, System, Update, IPTV
 │   ├── Bridge/           # JsBridge (C# <-> JavaScript)
 │   └── WebUI/            # HTML, CSS, JS for UI
 └── README.md
@@ -263,6 +267,9 @@ kotak.bat clean     # Clean build outputs
 - [x] Failed channel tracking (auto-marks broken channels)
 - [x] Browser utility (Microsoft Edge)
 - [x] Tailscale VPN utility
+- [x] DualShock 4 / DualSense support with touchpad mouse control
+- [x] App refocus (detect already running apps)
+- [x] Web Remote Control (QR code for phone control)
 
 ### Future
 
